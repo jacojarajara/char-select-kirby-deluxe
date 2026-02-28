@@ -1,6 +1,16 @@
 -- name: [CS] \\#FF79AA\\Kirby \\#FFFF3C\\Deluxe!
 -- description: Play as the pink puffball warrior with a moveset inspired by \\#FFFF3C\\Kirby and the Forgotten Land (2022)\\#DBDBDB\\, comes with both "Normal" and "Classic" costumes!\n\nKirby is owned by HAL Laboratory, Inc., voice clips from existing works (K64, SSB, SSBM) by Makiko Ohmoto.\n\n\\#ff7777\\This Pack requires Character Select\nto use as a Library!
 
+--[[
+
+	TODO:
+		- (URGENT) Check to see what can be done about the cloud particles that cause the slowdown.
+		- (SEMI-URGENT) Not a true problem, per-se, but when the local player is wearing a classic kirby costume, the smile present in the idle animation can also be seen on other kirby players, specifically if they're using the modern Kirby character.
+		- (NOTE) If Kirby has objects in his mouth, could he enter the water in the same way Metal Mario does? (I.E. changing the action flag to "ACT_FLAG_METAL_WATER" if "gPlayerSyncTable[i].kirbyMouthCounter_JJJ > 0")
+		- (NOTE) Could Kirby suck up coins? Not sure that's necessary considering that he never sucks up collectibles in the games.
+
+]]
+
 define_custom_obj_fields({oHasKirbySucked = 's32', oKirbySuckPlayer = 's32'})
 
 if not _G.charSelectExists then

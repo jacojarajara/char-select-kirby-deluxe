@@ -1,10 +1,3 @@
---[[
-	TODO:
-		- sounds
-		- icon/health meter
-		- retro kirby costume
-]]
-
 local E_MODEL_KIRBY_STAR = smlua_model_util_get_id("kirby_star_geo")
 local E_MODEL_KIRBY_AIR = smlua_model_util_get_id("kirby_air_geo")
 smlua_anim_util_register_animation('ANIM_KIRBY_STAR_LOOP', 0, 0, 0, 1, 40, { 
@@ -191,7 +184,6 @@ if _G.charSelect then
 			audio_sample_play(KIRBY_HIT_SOUND, o.header.gfx.pos, 1)
 			spawn_mist_particles()
 			spawn_triangle_break_particles(10, 139, 0.2, 3)
-			--network_send_object(o, true)
 			obj_mark_for_deletion(o)
 		end
 		
@@ -252,11 +244,11 @@ if _G.charSelect then
 		
 		if (o.oMoveFlags & OBJ_MOVE_HIT_WALL) ~= 0 or o.oForwardVel <= 0 or hasAttacked ~= 0 then
 			spawn_mist_particles_variable(20, -20, 10)
-			--network_send_object(o, true)
 			obj_mark_for_deletion(o)
 		else
 			if o.oForwardVel > 10 then
-				spawn_sync_object(id_bhvMistParticleSpawner, E_MODEL_NONE, o.oPosX, o.oPosY - 25, o.oPosZ, function(o)
+				-- TODO: this object below is causing a slowdown.
+				spawn_non_sync_object(id_bhvMistParticleSpawner, E_MODEL_NONE, o.oPosX, o.oPosY - 25, o.oPosZ, function(o) -- Previously "spawn_sync_object", not sure if setting it to a non-sync object fixes it.
 					o.oForwardVel = 0
 				end)
 			end
@@ -387,7 +379,7 @@ if _G.charSelect then
 			end
 		end
 		
-		if incomingAction == ACT_WALL_KICK_AIR and m.action ~= ACT_HOLDING_POLE then
+		if incomingAction == ACT_WALL_KICK_AIR and (m.action & ACT_FLAG_ON_POLE) == 0 then
 			m.faceAngle.y = m.faceAngle.y + degrees_to_sm64(180)
 			return 1
 		end
@@ -511,8 +503,11 @@ if _G.charSelect then
 			gPlayerSyncTable[idx].kirbyScaleY = 50
 		end
 		
-		if (m.action == ACT_CROUCHING or m.action == ACT_CROUCH_SLIDE) and gPlayerSyncTable[idx].kirbyMouthCounter_JJJ > 0 then -- Eat the contents
+		if ((m.action == ACT_CROUCHING or m.action == ACT_CROUCH_SLIDE) or (m.action & ACT_GROUP_MASK) == ACT_GROUP_CUTSCENE) and gPlayerSyncTable[idx].kirbyMouthCounter_JJJ > 0 then -- Eat the contents
 			play_character_sound(m, CHAR_SOUND_PUNCH_WAH)
+			if not (m.action == ACT_CROUCHING or m.action == ACT_CROUCH_SLIDE) then
+				m.marioObj.header.gfx.scale.y = 0.75
+			end
 			gPlayerSyncTable[idx].kirbyMouthCounter_JJJ = 0
 		end
 	
@@ -530,11 +525,11 @@ if _G.charSelect then
 		
 		if m.pos.y ~= m.floorHeight and gPlayerSyncTable[idx].kirbyMouthCounter_JJJ <= 0 and (m.action & ACT_FLAG_SWIMMING) == 0 and (m.action & ACT_FLAG_METAL_WATER) == 0 
 			and m.action ~= ACT_SOFT_BONK and m.action ~= ACT_TOP_OF_POLE_JUMP and m.action ~= ACT_KIRBY_PUFF and m.action ~= ACT_FLYING_TRIPLE_JUMP and m.action ~= ACT_FLYING and m.action ~= ACT_SHOT_FROM_CANNON and m.action ~= ACT_WATER_JUMP 
-			and m.action ~= ACT_START_HANGING and m.action ~= ACT_HANGING and m.action ~= ACT_HANG_MOVING then
+			and m.action ~= ACT_START_HANGING and m.action ~= ACT_HANGING and m.action ~= ACT_HANG_MOVING and m.action ~= ACT_BUBBLED then
 			gPlayerSyncTable[idx].kirbyFallTimer_JJJ = gPlayerSyncTable[idx].kirbyFallTimer_JJJ + 1
 			if gPlayerSyncTable[idx].kirbyFallTimer_JJJ > 40 and (m.action == ACT_JUMP or m.action == ACT_FREEFALL or m.action == ACT_JUMP_KICK or m.action == ACT_TOP_OF_POLE_JUMP) and m.vel.y < 0 then
 				m.marioObj.header.gfx.animInfo.animID = -1
-				set_mario_action(m, ACT_VERTICAL_WIND, 0) -- X
+				set_mario_action(m, ACT_VERTICAL_WIND, 0)
 				set_mario_animation(m, MARIO_ANIM_AIRBORNE_ON_STOMACH)
 				m.flags = (m.flags | MARIO_MARIO_SOUND_PLAYED) & ~MARIO_KICKING
 				m.actionState = 1

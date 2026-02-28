@@ -33,11 +33,14 @@ local allowedBehaviors = {
 	id_bhvMetalCap, 
 	id_bhvVanishCap, 
 	id_bhvUkiki, -- I want that monkey DEAD!!!!!! (Not the one that unlocks the cage, he gets to live)
+	id_bhvMips, 
 }
 
 function act_kirby_hello(m)
     if m.actionTimer == 0 then
-		play_character_sound(m, CHAR_SOUND_HELLO)
+		if gPlayerSyncTable[idx].kirbyMouthCounter_JJJ <= 0 then
+			play_character_sound(m, CHAR_SOUND_HELLO)
+		end
         set_mario_animation(m, CHAR_ANIM_KIRBY_HELLO)
         mario_set_forward_vel(m, 0.0)
     elseif m.input & (INPUT_NONZERO_ANALOG | INPUT_A_PRESSED | INPUT_B_PRESSED | INPUT_Z_PRESSED) ~= 0 or is_anim_at_end(m) ~= 0 then
@@ -135,7 +138,7 @@ function act_kirby_inhale(m)
 	-- SUCK
 	for i = 1, #allowedBehaviors do
 		local o = obj_get_nearest_object_with_behavior_id(m.marioObj, allowedBehaviors[i])
-		if o and (o.oKirbySuckPlayer == 0 or idx + 1 == o.oKirbySuckPlayer) then
+		if o and (o.oKirbySuckPlayer == 0 or idx + 1 == o.oKirbySuckPlayer) and not (obj_has_behavior_id(o, id_bhvKoopa) ~= 0 and o.oKoopaMovementType >= KOOPA_BP_KOOPA_THE_QUICK_BASE) then -- Main check + simple check for Koopa the Quick.
 			local distToKirby = calc_abs_dist({x = o.oPosX, y = o.oPosY, z = o.oPosZ}, {x = m.pos.x, y = m.pos.y, z = m.pos.z})
 			
 			local angle = mario_obj_angle_to_object(m, o)
@@ -147,10 +150,11 @@ function act_kirby_inhale(m)
 					break
 				end
 				
-				local isBlueCoin = obj_has_behavior_id(o, id_bhvBlueCoinJumping) == 1 or obj_has_behavior_id(o, id_bhvSnufit) == 1
+				local isBlueCoin = obj_has_behavior_id(o, id_bhvBlueCoinJumping) ~= 0 or obj_has_behavior_id(o, id_bhvSnufit) ~= 0
 				
-				local isBabyPenguin = obj_has_behavior_id(o, id_bhvSmallPenguin) == 1 or obj_has_behavior_id(o, id_bhvJumpingBox) == 1 or isBlueCoin or obj_has_behavior_id(o, id_bhvWingCap) == 1
-									  or obj_has_behavior_id(o, id_bhvMetalCap) == 1 or obj_has_behavior_id(o, id_bhvVanishCap) == 1 or (obj_has_behavior_id(o, id_bhvUkiki) == 1 and o.oBehParams2ndByte ~= UKIKI_CAP)
+				local isBabyPenguin = obj_has_behavior_id(o, id_bhvSmallPenguin) ~= 0 or obj_has_behavior_id(o, id_bhvJumpingBox) ~= 0 or isBlueCoin or obj_has_behavior_id(o, id_bhvWingCap) ~= 0
+									  or obj_has_behavior_id(o, id_bhvMetalCap) ~= 0 or obj_has_behavior_id(o, id_bhvVanishCap) ~= 0 or (obj_has_behavior_id(o, id_bhvUkiki) ~= 0 and o.oBehParams2ndByte ~= UKIKI_CAP)
+									  or obj_has_behavior_id(o, id_bhvMips) ~= 0
 									  -- Don't eat the baby... or the coin!
 				
 				o.oHasKirbySucked = 1
@@ -177,15 +181,16 @@ function act_kirby_inhale(m)
 							obj_spawn_loot_blue_coins(o, 1, 1, 0)
 						else
 							-- Spawning coins so that Kirby doesn't lose out on the 100 coin stars.
-							if obj_has_behavior_id(o, id_bhvBobomb) == 1 then
+							if obj_has_behavior_id(o, id_bhvBobomb) ~= 0 then
 								o.oNumLootCoins = 1
-							elseif obj_has_behavior_id(o, id_bhvBreakableBoxSmall) == 1 then
+							elseif obj_has_behavior_id(o, id_bhvBreakableBoxSmall) ~= 0 then
 								o.oNumLootCoins = 3
 							end
 							obj_spawn_loot_yellow_coins(o, o.oNumLootCoins, 5)
 						end
 						obj_mark_for_deletion(o)
 						if obj_has_behavior_id(o, id_bhvWaterBombShadow) == 0 then -- Added just in case.
+							m.vel.y, m.forwardVel = 7, 0
 							audio_sample_play(KIRBY_OBJECT_SOUND, m.pos, 1)
 							gPlayerSyncTable[idx].kirbyMouthCounter_JJJ = gPlayerSyncTable[idx].kirbyMouthCounter_JJJ + 1
 						end
