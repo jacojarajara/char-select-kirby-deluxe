@@ -5,6 +5,7 @@
 
 	TODO:
 		- (URGENT) Check to see what can be done about the cloud particles that cause the slowdown.
+		- (URGENT) The vortex mesh can be replaced with the Mad Piano's mesh in Big Boo's Haunt for some reason.
 		- (SEMI-URGENT) Not a true problem, per-se, but when the local player is wearing a classic kirby costume, the smile present in the idle animation can also be seen on other kirby players, specifically if they're using the modern Kirby character.
 		- (NOTE) If Kirby has objects in his mouth, could he enter the water in the same way Metal Mario does? (I.E. changing the action flag to "ACT_FLAG_METAL_WATER" if "gPlayerSyncTable[i].kirbyMouthCounter_JJJ > 0")
 		- (NOTE) Could Kirby suck up coins? Not sure that's necessary considering that he never sucks up collectibles in the games.
