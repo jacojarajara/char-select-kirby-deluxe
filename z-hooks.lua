@@ -260,8 +260,7 @@ if _G.charSelect then
 			obj_mark_for_deletion(o)
 		else
 			if o.oForwardVel > 10 then
-				-- TODO: this object below is causing a slowdown.
-				spawn_non_sync_object(id_bhvMistParticleSpawner, E_MODEL_NONE, o.oPosX, o.oPosY - 25, o.oPosZ, function(o) -- Previously "spawn_sync_object", not sure if setting it to a non-sync object fixes it.
+				spawn_non_sync_object(id_bhvMistParticleSpawner, E_MODEL_NONE, o.oPosX, o.oPosY - 25, o.oPosZ, function(o)
 					o.oForwardVel = 0
 				end)
 			end
@@ -341,10 +340,12 @@ if _G.charSelect then
 		end
 		
 		if incomingAction == ACT_JUMP_KICK and m.action == ACT_KIRBY_PUFF then
-			spawn_sync_object(id_bhvKirbyAir_JJJ, E_MODEL_KIRBY_AIR, m.pos.x, m.pos.y + 50, m.pos.z, function(o)
-				o.oMoveAngleYaw = m.faceAngle.y
-				o.oForwardVel = m.forwardVel + floorObjectVel + 64
-			end)
+			if m.playerIndex == 0 then
+				spawn_sync_object(id_bhvKirbyAir_JJJ, E_MODEL_KIRBY_AIR, m.pos.x, m.pos.y + 50, m.pos.z, function(o)
+					o.oMoveAngleYaw = m.faceAngle.y
+					o.oForwardVel = m.forwardVel + floorObjectVel + 64
+				end)
+			end
 			return incomingAction
 		end
 		
@@ -417,20 +418,21 @@ if _G.charSelect then
 			if gPlayerSyncTable[idx].kirbyMouthCounter_JJJ > 0 then
 				m.forwardVel = 0
 				local mouthCounter = gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ - 1
-				spawn_sync_object(id_bhvKirbyStar_JJJ, E_MODEL_KIRBY_STAR, m.pos.x, m.pos.y, m.pos.z, function(o)
-                    o.oMoveAngleYaw = m.faceAngle.y
-					o.oBehParams = math.min(mouthCounter + 1, 4)
-					o.oForwardVel = m.forwardVel + floorObjectVel + 48
-					o.parentObj = m.marioObj
-                end)
+				if m.playerIndex == 0 then
+					spawn_sync_object(id_bhvKirbyStar_JJJ, E_MODEL_KIRBY_STAR, m.pos.x, m.pos.y, m.pos.z, function(o)
+						o.oMoveAngleYaw = m.faceAngle.y
+						o.oBehParams = math.min(mouthCounter + 1, 4)
+						o.oForwardVel = m.forwardVel + floorObjectVel + 48
+						o.parentObj = m.marioObj
+					end)
+				end
 				gPlayerSyncTable[idx].kirbyMouthCounter_JJJ = 0
 				m.vel.y = 24
 				return ACT_JUMP_KICK
 			else
+				if m.pos.y == m.floorHeight then m.vel.y = 0 end
 				gPlayerSyncTable[idx].kirbyInhaleTimer_JJJ = 0
-				spawn_non_sync_object(id_bhvKirbyInhale_JJJ, E_MODEL_DL_WHIRLPOOL, m.pos.x, m.pos.y + 25, m.pos.z, function(o) 
-					o.parentObj = m.marioObj
-				end)
+				if m.playerIndex == 0 then spawn_non_sync_object(id_bhvKirbyInhale_JJJ, E_MODEL_DL_WHIRLPOOL, m.pos.x, m.pos.y + 25, m.pos.z, function(o) o.parentObj = m.marioObj end) end
 				return ACT_KIRBY_INHALE
 			end
 		end
