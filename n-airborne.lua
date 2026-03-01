@@ -1,3 +1,24 @@
+-- CONFIG HOVER MOVE
+
+local modConfigName = "kirbyInfinitePuff_JJJ"
+local kirbyInfinitePuff = false
+local puffCondExists = mod_storage_exists(modConfigName)
+if puffCondExists then
+	kirbyInfinitePuff = mod_storage_load_bool(modConfigName)
+else
+	kirbyInfinitePuff = false
+	mod_storage_save_bool(modConfigName, false)
+end
+
+local function kirbyInfinitePuffToggle(index, value)
+    kirbyInfinitePuff = value
+    mod_storage_save_bool(modConfigName, value)
+end
+
+hook_mod_menu_checkbox("Infinite Hover (Recommended For ROM hacks)", kirbyInfinitePuff, kirbyInfinitePuffToggle)
+
+-- AIRBORNE ACTS
+
 ACT_KIRBY_SLIDE = allocate_mario_action(0x0AA | ACT_FLAG_AIR | ACT_FLAG_ATTACKING | ACT_FLAG_ALLOW_VERTICAL_WIND_ACTION)
 ACT_KIRBY_PUFF = allocate_mario_action(0x080 | ACT_FLAG_AIR | ACT_FLAG_ALLOW_VERTICAL_WIND_ACTION | ACT_FLAG_CONTROL_JUMP_HEIGHT)
 ACT_KIRBY_DODGE = allocate_mario_action(0x080 | ACT_FLAG_AIR | ACT_FLAG_ALLOW_VERTICAL_WIND_ACTION | ACT_FLAG_CONTROL_JUMP_HEIGHT)
@@ -87,14 +108,19 @@ function act_kirby_puff(m)
 			play_character_sound(m, CHAR_SOUND_HOOHOO)
 			set_mario_animation(m, MARIO_ANIM_DOUBLE_JUMP_RISE)
 			if not kirbyIsTired then
-				local ceilingValue = gPlayerSyncTable[idx].kirbyPuffCeiling_JJJ
-				local puffPosition = ceilingValue - m.marioObj.header.gfx.pos.y
-				local puffPosMax = math.max(puffPosition, 0)
-				
-				local puffPower = puffPosMax / 800
-				
-				local maxClamp = math.max(puffPower, 0)
-				local truePuffPower = math.min(maxClamp, 1)
+				local truePuffPower
+				if kirbyInfinitePuff then
+					truePuffPower = 1
+				else
+					local ceilingValue = gPlayerSyncTable[idx].kirbyPuffCeiling_JJJ
+					local puffPosition = ceilingValue - m.marioObj.header.gfx.pos.y
+					local puffPosMax = math.max(puffPosition, 0)
+					
+					local puffPower = puffPosMax / 800
+					
+					local maxClamp = math.max(puffPower, 0)
+					truePuffPower = math.min(maxClamp, 1)
+				end
 				
 				m.vel.y = VELOCITY_AMPLITUDE * truePuffPower
 			end
