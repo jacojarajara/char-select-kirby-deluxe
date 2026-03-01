@@ -215,7 +215,11 @@ function act_kirby_inhale(m)
 	
 	if letGoButtonCond then
 		if kirbyIsTired then audio_sample_play(KIRBY_LAND_SOUND, m.pos, 1) end
-		return set_mario_action(m, ACT_IDLE, 0)
+		if m.pos.y == m.floorHeight then
+			return set_mario_action(m, ACT_IDLE, 0)
+		else
+			return set_mario_action(m, ACT_FREEFALL, 0)
+		end
 	end
 
 	if steepFloorCond then
