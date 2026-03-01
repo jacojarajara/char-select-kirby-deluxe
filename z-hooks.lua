@@ -164,7 +164,7 @@ if _G.charSelect then
 		o.header.gfx.scale.y = approach_f32(o.header.gfx.scale.y, SCALE_SIZE, SCALE_SPEED, SCALE_SPEED)
 		o.header.gfx.scale.z = approach_f32(o.header.gfx.scale.z, SCALE_SIZE, SCALE_SPEED, SCALE_SPEED)
 		
-		if o.oTimer > 3 * o.oBehParams then
+		if o.oTimer > 4 * o.oBehParams then
 			o.oInteractType = INTERACT_DAMAGE
 		end
 	
@@ -179,7 +179,7 @@ if _G.charSelect then
 			local oHit = obj_get_first(list)
 			while oHit do
 				if o ~= oHit then
-					if oHit.oHeldState == HELD_FREE and obj_check_hitbox_overlap(o, oHit) then
+					if oHit.oHeldState == HELD_FREE and obj_check_hitbox_overlap(o, oHit) and (oHit.header.gfx.node.flags & GRAPH_RENDER_INVISIBLE) == 0 and oHit.oIntangibleTimer >= 0 then
 						if (oHit.oInteractType == INTERACT_BREAKABLE or obj_is_attackable(oHit)) and obj_has_behavior_id(oHit, id_bhvBowser) == 0 then
 							oHit.oInteractStatus = oHit.oInteractStatus | INT_STATUS_WAS_ATTACKED | INT_STATUS_INTERACTED | INT_STATUS_TOUCHED_BOB_OMB | ATTACK_PUNCH
 							hasAttacked = 1
@@ -419,9 +419,8 @@ if _G.charSelect then
 				local mouthCounter = gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ - 1
 				spawn_sync_object(id_bhvKirbyStar_JJJ, E_MODEL_KIRBY_STAR, m.pos.x, m.pos.y, m.pos.z, function(o)
                     o.oMoveAngleYaw = m.faceAngle.y
-					o.oBehParams = mouthCounter + 1
+					o.oBehParams = math.min(mouthCounter + 1, 4)
 					o.oForwardVel = m.forwardVel + floorObjectVel + 48
-					o.oIntangibleTimer = 100
 					o.parentObj = m.marioObj
                 end)
 				gPlayerSyncTable[idx].kirbyMouthCounter_JJJ = 0

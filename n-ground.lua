@@ -181,12 +181,14 @@ function act_kirby_inhale(m)
 							obj_spawn_loot_blue_coins(o, 1, 1, 0)
 						else
 							-- Spawning coins so that Kirby doesn't lose out on the 100 coin stars.
-							if obj_has_behavior_id(o, id_bhvBobomb) ~= 0 then
-								o.oNumLootCoins = 1
-							elseif obj_has_behavior_id(o, id_bhvBreakableBoxSmall) ~= 0 then
-								o.oNumLootCoins = 3
+							if obj_has_behavior_id(o, id_bhvKoopaShell) == 0 then
+								if obj_has_behavior_id(o, id_bhvBobomb) ~= 0 then
+									o.oNumLootCoins = 1
+								elseif obj_has_behavior_id(o, id_bhvBreakableBoxSmall) ~= 0 then
+									o.oNumLootCoins = 3
+								end
+								obj_spawn_loot_yellow_coins(o, o.oNumLootCoins, 5)
 							end
-							obj_spawn_loot_yellow_coins(o, o.oNumLootCoins, 5)
 						end
 						obj_mark_for_deletion(o)
 						if obj_has_behavior_id(o, id_bhvWaterBombShadow) == 0 then -- Added just in case.
