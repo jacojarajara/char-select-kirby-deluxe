@@ -135,7 +135,6 @@ if _G.charSelect then
 		obj_set_billboard(o)
 		
 		local hitbox = get_temp_object_hitbox()
-		hitbox.interactType = INTERACT_DAMAGE
 		hitbox.hurtboxRadius = 150 * o.oBehParams
 		hitbox.hurtboxHeight = 300 * o.oBehParams
 		hitbox.downOffset = 20
@@ -145,7 +144,7 @@ if _G.charSelect then
 		obj_set_billboard(o)
 		obj_set_hitbox(o, hitbox)
 		
-		cur_obj_scale(0.625 * o.oBehParams)
+		cur_obj_scale(0)
 		
 		network_init_object(o, true, nil)
 	end
@@ -156,6 +155,16 @@ if _G.charSelect then
 	}
 	
 	local function bhv_kirby_star_loop(o)
+	
+		local SCALE_SIZE, SCALE_SPEED = 0.625 * o.oBehParams, 0.125 * o.oBehParams
+		o.header.gfx.scale.x = approach_f32(o.header.gfx.scale.x, SCALE_SIZE, SCALE_SPEED, SCALE_SPEED)
+		o.header.gfx.scale.y = approach_f32(o.header.gfx.scale.y, SCALE_SIZE, SCALE_SPEED, SCALE_SPEED)
+		o.header.gfx.scale.z = approach_f32(o.header.gfx.scale.z, SCALE_SIZE, SCALE_SPEED, SCALE_SPEED)
+		
+		if o.oTimer > 3 * o.oBehParams then
+			o.oInteractType = INTERACT_DAMAGE
+		end
+	
 		spawn_non_sync_object(id_bhvSparkleSpawn, E_MODEL_NONE, o.oPosX, o.oPosY + 30, o.oPosZ, function (o) end)
 		smlua_anim_util_set_animation(o, "ANIM_KIRBY_STAR_LOOP")
 	
@@ -317,6 +326,8 @@ if _G.charSelect then
 		return tostring(action)
 	end
 	
+	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_ON_WARP, function() audio_stream_stop(KIRBY_INHALE_SOUND) end) -- Added to prevent the inhale sound from playing outside a level forever.
+	
 	local function kirbyBeforeActions(m, incomingAction)
 		local idx = m.playerIndex
 		local floorObjectVel = (m.floor and m.floor.object and m.floor.object.oForwardVel) or 0
@@ -396,10 +407,9 @@ if _G.charSelect then
 		if incomingAction ~= ACT_PICKING_UP and (incomingAction == ACT_DIVE or (incomingAction == ACT_PUNCHING and m.action ~= ACT_CROUCHING) or incomingAction == ACT_MOVE_PUNCHING or (incomingAction == ACT_JUMP_KICK and m.action ~= ACT_KIRBY_PUFF)) then
 			m.vel.y = 0
 			if gPlayerSyncTable[idx].kirbyMouthCounter_JJJ > 0 then
-				
 				m.forwardVel = 0
 				local mouthCounter = gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ - 1
-				spawn_sync_object(id_bhvKirbyStar_JJJ, E_MODEL_KIRBY_STAR, m.pos.x + sins(m.faceAngle.y) * (215 + (mouthCounter * 200)), m.pos.y, m.pos.z + coss(m.faceAngle.y) * (215 + (mouthCounter * 200)), function(o)
+				spawn_sync_object(id_bhvKirbyStar_JJJ, E_MODEL_KIRBY_STAR, m.pos.x, m.pos.y, m.pos.z, function(o)
                     o.oMoveAngleYaw = m.faceAngle.y
 					o.oBehParams = mouthCounter + 1
 					o.oForwardVel = m.forwardVel + floorObjectVel + 48
