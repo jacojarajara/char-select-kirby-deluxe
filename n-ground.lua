@@ -38,7 +38,7 @@ local allowedBehaviors = {
 
 function act_kirby_hello(m)
     if m.actionTimer == 0 then
-		if gPlayerSyncTable[idx].kirbyMouthCounter_JJJ <= 0 then
+		if gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ <= 0 then
 			play_character_sound(m, CHAR_SOUND_HELLO)
 		end
         set_mario_animation(m, CHAR_ANIM_KIRBY_HELLO)

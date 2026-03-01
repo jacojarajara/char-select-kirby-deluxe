@@ -76,11 +76,14 @@ if _G.charSelect then
 	
 	local function bhv_kirby_effect_init(o)
 		cur_obj_scale(0)
+		local m = get_mario_state_from_object(o.parentObj)
+		if not m or m.playerIndex ~= 0 then
+			obj_mark_for_deletion(o)
+		end
 	end
 	
 	local function bhv_kirby_effect_loop(o)
 		local m = get_mario_state_from_object(o.parentObj)
-		
 		if not m then return end
 
 		o.oPosX, o.oPosY, o.oPosZ = m.pos.x + sins(m.faceAngle.y) * 37.5, m.pos.y + 75, m.pos.z + coss(m.faceAngle.y) * 37.5
@@ -202,6 +205,7 @@ if _G.charSelect then
 	
 	-- AIR
 	local function bhv_kirby_air_init(o)
+	
 		o.oFaceAngleRoll = 0
 		o.oMoveAngleRoll = 0
 		o.oBounciness = 0
