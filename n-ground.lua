@@ -227,7 +227,7 @@ function act_kirby_inhale(m)
 	vec3f_copy(startPos, m.pos)
 	
 	m.forwardVel = approach_s32(m.forwardVel, math.min(m.forwardVel, 25), 0.5, 16)
-	if m.intendedMag == 0 then
+	if m.intendedMag == 0 or m.pos.y ~= m.floorHeight then
 		set_mario_animation(m, CHAR_ANIM_KIRBY_INHALE_IDLE)
 	else
 		set_mario_anim_with_accel(m, CHAR_ANIM_KIRBY_INHALE_MOVE, m.intendedMag * 2000)

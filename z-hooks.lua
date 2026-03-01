@@ -394,9 +394,14 @@ if _G.charSelect then
 			end
 		end
 		
-		if incomingAction == ACT_WALL_KICK_AIR and (m.action & ACT_FLAG_ON_POLE) == 0 then
-			m.faceAngle.y = m.faceAngle.y + degrees_to_sm64(180)
-			return 1
+		if incomingAction == ACT_WALL_KICK_AIR then
+			if (m.action & ACT_FLAG_ON_POLE) == 0 then
+				m.faceAngle.y = m.faceAngle.y + degrees_to_sm64(180)
+				return 1
+			else
+				m.forwardVel = 32
+				return ACT_JUMP
+			end
 		end
 		
 		if incomingAction == ACT_START_CRAWLING and m.action == ACT_CROUCHING then
@@ -409,7 +414,6 @@ if _G.charSelect then
 		end
 		
 		if incomingAction ~= ACT_PICKING_UP and (incomingAction == ACT_DIVE or (incomingAction == ACT_PUNCHING and m.action ~= ACT_CROUCHING) or incomingAction == ACT_MOVE_PUNCHING or (incomingAction == ACT_JUMP_KICK and m.action ~= ACT_KIRBY_PUFF)) then
-			m.vel.y = 0
 			if gPlayerSyncTable[idx].kirbyMouthCounter_JJJ > 0 then
 				m.forwardVel = 0
 				local mouthCounter = gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ - 1
@@ -539,7 +543,7 @@ if _G.charSelect then
 		
 		if m.pos.y ~= m.floorHeight and gPlayerSyncTable[idx].kirbyMouthCounter_JJJ <= 0 and (m.action & ACT_FLAG_SWIMMING) == 0 and (m.action & ACT_FLAG_METAL_WATER) == 0 
 			and m.action ~= ACT_SOFT_BONK and m.action ~= ACT_TOP_OF_POLE_JUMP and m.action ~= ACT_KIRBY_PUFF and m.action ~= ACT_FLYING_TRIPLE_JUMP and m.action ~= ACT_FLYING and m.action ~= ACT_SHOT_FROM_CANNON and m.action ~= ACT_WATER_JUMP 
-			and m.action ~= ACT_START_HANGING and m.action ~= ACT_HANGING and m.action ~= ACT_HANG_MOVING and m.action ~= ACT_BUBBLED then
+			and m.action ~= ACT_START_HANGING and m.action ~= ACT_HANGING and m.action ~= ACT_HANG_MOVING and m.action ~= ACT_BUBBLED and m.action ~= ACT_KIRBY_INHALE then
 			gPlayerSyncTable[idx].kirbyFallTimer_JJJ = gPlayerSyncTable[idx].kirbyFallTimer_JJJ + 1
 			if gPlayerSyncTable[idx].kirbyFallTimer_JJJ > 40 and (m.action == ACT_JUMP or m.action == ACT_FREEFALL or m.action == ACT_JUMP_KICK or m.action == ACT_TOP_OF_POLE_JUMP) and m.vel.y < 0 then
 				m.marioObj.header.gfx.animInfo.animID = -1
@@ -548,7 +552,7 @@ if _G.charSelect then
 				m.flags = (m.flags | MARIO_MARIO_SOUND_PLAYED) & ~MARIO_KICKING
 				m.actionState = 1
 			end
-			if (m.input & INPUT_A_PRESSED) ~= 0 and gPlayerSyncTable[idx].kirbyFallTimer_JJJ >= (m.action == ACT_WALL_KICK_AIR and 8 or 2) then
+			if (m.input & INPUT_A_PRESSED) ~= 0 and gPlayerSyncTable[idx].kirbyFallTimer_JJJ >= 2 then
 				if (m.flags & MARIO_WING_CAP) ~= 0 then
 					if m.action ~= ACT_GROUND_POUND then
 						spawn_mist_particles_variable(20, -20, 10)
