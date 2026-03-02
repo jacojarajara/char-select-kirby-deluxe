@@ -40,6 +40,8 @@ function act_kirby_hello(m)
     if m.actionTimer == 0 then
 		if gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ <= 0 then
 			play_character_sound(m, CHAR_SOUND_HELLO)
+		else
+			play_character_sound(m, CHAR_SOUND_HOOHOO)
 		end
         set_mario_animation(m, CHAR_ANIM_KIRBY_HELLO)
         mario_set_forward_vel(m, 0.0)

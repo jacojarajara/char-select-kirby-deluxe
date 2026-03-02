@@ -4,12 +4,9 @@
 --[[
 
 	TODO:
-		- (URGENT) Check to see what can be done about the cloud particles that cause the slowdown.
-		- (URGENT) The vortex mesh can be replaced with the Mad Piano's mesh in Big Boo's Haunt for some reason.
+		- (URGENT, X) Check to see what can be done about the cloud particles that cause the slowdown.
 		- (SEMI-URGENT) Not a true problem, per-se, but when the local player is wearing a classic kirby costume, the smile present in the idle animation can also be seen on other kirby players, specifically if they're using the modern Kirby character.
 		- (SEMI-URGENT) I think there should be a way to have it so that, instead of having a list of behaviors, it uses a set of object lists, so that Kirby can be compatible with ROM Hacks.
-		- (NOTE) If Kirby has objects in his mouth, could he enter the water in the same way Metal Mario does? (I.E. changing the action flag to "ACT_FLAG_METAL_WATER" if "gPlayerSyncTable[i].kirbyMouthCounter_JJJ > 0")
-		- (NOTE) Could Kirby suck up coins? Not sure that's necessary considering that he never sucks up collectibles in the games.
 
 ]]
 
@@ -193,7 +190,7 @@ function kirbyInhale_JJJ(node, matStackIndex)
 	local m = geo_get_mario_state()
 	local idx = m.playerIndex
 	local toNode = 0
-	if m.action == ACT_KIRBY_INHALE or (m.action == ACT_JUMP_KICK and m.marioObj.header.gfx.animInfo.animFrame < 10) then
+	if m.action == ACT_KIRBY_INHALE or (m.action == ACT_JUMP_KICK and m.marioObj.header.gfx.animInfo.animFrame < 10) or (m.action == ACT_WATER_PUNCH and m.marioObj.header.gfx.animInfo.animFrame < 5) then
 		toNode = 1
 	elseif gPlayerSyncTable[idx].kirbyMouthCounter_JJJ > 0 or m.action == ACT_KIRBY_PUFF then
 		toNode = 2
@@ -229,11 +226,10 @@ _G.charSelect.character_add_caps(E_MODEL_KIRBY, kirbyCaps)
 _G.charSelect.character_add_voice(E_MODEL_KIRBY, KIRBY_VOICETABLE)
 _G.charSelect.character_add_animations(E_MODEL_KIRBY, kirbyAnims.anims, kirbyAnims.eyes)
 
-
 _G.charSelect.character_add_caps(E_MODEL_KIRBY_RETRO, kirbyCaps)
 _G.charSelect.character_add_voice(E_MODEL_KIRBY_RETRO, KIRBY_VOICETABLE)
-_G.charSelect.character_add_animations(E_MODEL_KIRBY_RETRO, kirbyAnims.anims, kirbyAnims.eyes)
 
+_G.charSelect.character_add_animations(E_MODEL_KIRBY_RETRO, kirbyAnims.anims, kirbyAnims.eyes)
 _G.charSelect.character_add_menu_instrumental(kirbyCharID, audio_stream_load("menu.ogg"))
 _G.charSelect.character_add_graffiti(kirbyCharID, TEX_GRAFFITI_KIRBY)
 

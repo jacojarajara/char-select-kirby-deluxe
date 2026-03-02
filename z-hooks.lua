@@ -1,5 +1,6 @@
 local E_MODEL_KIRBY_STAR = smlua_model_util_get_id("kirby_star_geo")
 local E_MODEL_KIRBY_AIR = smlua_model_util_get_id("kirby_air_geo")
+local E_MODEL_KIRBY_VORTEX = smlua_model_util_get_id("vortex_geo")
 smlua_anim_util_register_animation('ANIM_KIRBY_STAR_LOOP', 0, 0, 0, 1, 40, { 
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -171,7 +172,7 @@ if _G.charSelect then
 		spawn_non_sync_object(id_bhvSparkleSpawn, E_MODEL_NONE, o.oPosX, o.oPosY + 30, o.oPosZ, function (o) end)
 		smlua_anim_util_set_animation(o, "ANIM_KIRBY_STAR_LOOP")
 	
-		o.oPosX, o.oPosZ = o.oPosX + sins(o.oMoveAngleYaw) * o.oForwardVel, o.oPosZ + coss(o.oMoveAngleYaw) * o.oForwardVel
+		o.oPosY = o.oPosY + sins(o.oMoveAnglePitch) * o.oForwardVel
 		obj_update_gfx_pos_and_angle(o)
 		
 		local hasAttacked = obj_attack_collided_from_other_object(o)
@@ -192,13 +193,14 @@ if _G.charSelect then
 		end
 		
 		cur_obj_update_floor_and_walls()
-		if (o.oMoveFlags & (OBJ_MOVE_HIT_WALL | OBJ_MOVE_ON_GROUND)) ~= 0 or (o.oBehParams <= 1 and hasAttacked ~= 0) then
+		cur_obj_move_standard(-78) -- Added so that the object can move on slopes
+
+		if (o.oMoveFlags & OBJ_MOVE_HIT_WALL) ~= 0 or (o.oBehParams <= 1 and hasAttacked ~= 0) then
 			audio_sample_play(KIRBY_HIT_SOUND, o.header.gfx.pos, 1)
 			spawn_mist_particles()
 			spawn_triangle_break_particles(10, 139, 0.2, 3)
 			obj_mark_for_deletion(o)
 		end
-		
 	end
 	
 	id_bhvKirbyStar_JJJ = hook_behavior(nil, OBJ_LIST_PUSHABLE, true, bhv_kirby_star_init, bhv_kirby_star_loop, "bhvKirbyStar_JJJ")
@@ -414,25 +416,30 @@ if _G.charSelect then
 			return ACT_KIRBY_DODGE
 		end
 		
-		if incomingAction ~= ACT_PICKING_UP and (incomingAction == ACT_DIVE or (incomingAction == ACT_PUNCHING and m.action ~= ACT_CROUCHING) or incomingAction == ACT_MOVE_PUNCHING or (incomingAction == ACT_JUMP_KICK and m.action ~= ACT_KIRBY_PUFF)) then
+		if incomingAction ~= ACT_PICKING_UP and (incomingAction == ACT_DIVE or (incomingAction == ACT_PUNCHING and m.action ~= ACT_CROUCHING) or incomingAction == ACT_MOVE_PUNCHING or (incomingAction == ACT_JUMP_KICK and m.action ~= ACT_KIRBY_PUFF)) or incomingAction == ACT_WATER_PUNCH then
 			if gPlayerSyncTable[idx].kirbyMouthCounter_JJJ > 0 then
 				m.forwardVel = 0
-				local mouthCounter = gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ - 1
 				if m.playerIndex == 0 then
+					local pitch = (m.action & ACT_FLAG_SWIMMING) ~= 0 and m.faceAngle.x or 0
 					spawn_sync_object(id_bhvKirbyStar_JJJ, E_MODEL_KIRBY_STAR, m.pos.x, m.pos.y, m.pos.z, function(o)
+						o.oMoveAnglePitch = pitch
 						o.oMoveAngleYaw = m.faceAngle.y
-						o.oBehParams = math.min(mouthCounter + 1, 4)
+						o.oBehParams = math.min(gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ, 4)
 						o.oForwardVel = m.forwardVel + floorObjectVel + 48
 						o.parentObj = m.marioObj
 					end)
 				end
 				gPlayerSyncTable[idx].kirbyMouthCounter_JJJ = 0
-				m.vel.y = 24
-				return ACT_JUMP_KICK
-			else
+				if incomingAction ~= ACT_WATER_PUNCH then
+					m.vel.y = 24
+					return ACT_JUMP_KICK
+				else
+					return incomingAction
+				end
+			elseif incomingAction ~= ACT_WATER_PUNCH then
 				if m.pos.y == m.floorHeight then m.vel.y = 0 end
 				gPlayerSyncTable[idx].kirbyInhaleTimer_JJJ = 0
-				if m.playerIndex == 0 then spawn_non_sync_object(id_bhvKirbyInhale_JJJ, E_MODEL_DL_WHIRLPOOL, m.pos.x, m.pos.y + 25, m.pos.z, function(o) o.parentObj = m.marioObj end) end
+				if m.playerIndex == 0 then spawn_non_sync_object(id_bhvKirbyInhale_JJJ, E_MODEL_KIRBY_VORTEX, m.pos.x, m.pos.y + 25, m.pos.z, function(o) o.parentObj = m.marioObj end) end
 				return ACT_KIRBY_INHALE
 			end
 		end
@@ -660,6 +667,30 @@ if _G.charSelect then
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_BEFORE_MARIO_UPDATE, kirbyPreUpdate)
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_ON_SET_MARIO_ACTION, kirbyActions)
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_BEFORE_SET_MARIO_ACTION, kirbyBeforeActions)
+	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_BEFORE_PHYS_STEP, function (m)
+		local hScale, vScale = 1.0, 1.0
+	
+		if gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ > 0 then
+			if (m.action & ACT_FLAG_SWIMMING) ~= 0 then
+				m.pos.y = m.pos.y - 5.5
+				if m.vel.y > 0 then
+					vScale = vScale * 0.5
+				end
+				hScale = hScale * 0.6
+			else
+				if (m.action & ACT_FLAG_MOVING) ~= 0 and m.action ~= ACT_BUBBLED then
+					hScale = hScale * 0.75
+				elseif m.action & ACT_FLAG_AIR ~= 0 and m.vel.y > 0 then
+					vScale = vScale * 0.9375
+				end
+				
+			end
+		end
+		
+		m.vel.x = m.vel.x * hScale
+		m.vel.y = m.vel.y * vScale
+		m.vel.z = m.vel.z * hScale
+	end)
 	
 	local function allow_interact(m, o, intType) -- Piece of code I found on "Coop Central" by "@.kristy.", originally from Sonic Rebooted which, before that, was from Pasta Castle.
 		if m.action == ACT_KIRBY_INHALE then
