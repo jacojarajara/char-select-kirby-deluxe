@@ -99,13 +99,19 @@ local allowedBehaviors = {
 
 _G.kirbyInhaleHookBehavior = function (id, canRotate, canEat, ignoreOnFuncOrCond, deleteOnDetect, onEatFunc) -- Allows the modder to hook a custom behavior for Kirby to inhale.
 	if not id then return end
+	local trueCanRotate, trueCanEat, trueIgnoreOnFuncOrCond, trueDeleteOnDetect, trueOnEatFunc = true, true, false, false, nil
+	if canRotate ~= nil then trueCanRotate = canRotate end
+	if canEat ~= nil then trueCanEat = canEat end
+	if ignoreOnFuncOrCond ~= nil then trueIgnoreOnFuncOrCond = ignoreOnFuncOrCond end
+	if deleteOnDetect ~= nil then trueDeleteOnDetect = deleteOnDetect end
+	if onEatFunc ~= nil then trueOnEatFunc = onEatFunc end
 	return table.insert(allowedBehaviors, {
-		id = id,                                              -- Behavior ID of the object to inhale.
-		canRotate = canRotate or true,                        -- Check to see if an object can rotate as its being inhaled.
-		canEat = canEat or true,                              -- Check to see if an object can be removed once it reaches Kirby's mouth.
-		ignoreOnFuncOrCond = ignoreOnFuncOrCond or false,     -- Special checks for special objects (I.E. Koopa the Quick)
-		deleteOnDetect = deleteOnDetect or false,             -- Deletes an object if it's within Kirby's inhale range.
-		onEatFunc = onEatFunc                                 -- Special function that activates once the object's been deleted (I.E. add to Big Bully #2's condition once a bully has been eaten)
+		id = id,                                     -- Behavior ID of the object to inhale.
+		canRotate = trueCanRotate,                   -- Check to see if an object can rotate as its being inhaled.
+		canEat = trueCanEat,                         -- Check to see if an object can be removed once it reaches Kirby's mouth.
+		ignoreOnFuncOrCond = trueIgnoreOnFuncOrCond, -- Special checks for special objects (I.E. Koopa the Quick)
+		deleteOnDetect = trueDeleteOnDetect,         -- Deletes an object if it's within Kirby's inhale range.
+		onEatFunc = trueOnEatFunc                    -- Special function that activates once the object's been deleted (I.E. add to Big Bully #2's condition once a bully has been eaten)
 	})
 end
 
@@ -119,13 +125,16 @@ _G.kirbyInhaleEditBehavior = function (id, canRotate, canEat, ignoreOnFuncOrCond
 		end
 	end
 	if returnBeh then
-		returnBeh.canRotate = canRotate or returnBeh.canRotate
-		returnBeh.canEat = canEat or returnBeh.canEat
-		returnBeh.ignoreOnFuncOrCond = ignoreOnFuncOrCond or returnBeh.ignoreOnFuncOrCond
-		returnBeh.deleteOnDetect = deleteOnDetect or returnBeh.deleteOnDetect
-		returnBeh.onEatFunc = onEatFunc or returnBeh.onEatFunc
+		if canRotate ~= nil then returnBeh.canRotate = canRotate end
+		if canEat ~= nil then returnBeh.canEat = canEat end
+		if ignoreOnFuncOrCond ~= nil then returnBeh.ignoreOnFuncOrCond = ignoreOnFuncOrCond end
+		if deleteOnDetect ~= nil then returnBeh.deleteOnDetect = deleteOnDetect end
+		if returnBeh.onEatFunc and onEatFunc ~= nil then returnBeh.onEatFunc = onEatFunc end
 	end
 end
+
+--_G.kirbyInhaleEditBehavior(id_bhvGoomba, false, false)
+--_G.kirbyInhaleHookBehavior(id_bhvSnufitBalls, false, false, nil, true)
 
 local function run_func_or_get_var(x, ...) if type(x) == "function" then return x(...) else return x end end
 

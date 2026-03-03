@@ -49,9 +49,9 @@ kirbyAnims = {
 		[CHAR_ANIM_PUT_CAP_ON] = function (m, frame) if frame > 9 and frame < 20 then return MARIO_MOUTH_HAPPY end return MARIO_MOUTH_SMILE end, 
 		[CHAR_ANIM_FIRST_PERSON] = function (m, frame) if m.action == ACT_CREDITS_CUTSCENE or m.action == ACT_FIRST_PERSON or m.action == ACT_INTRO_CUTSCENE then return MARIO_MOUTH_NORMAL end return MARIO_MOUTH_FROWN end, 
 		[CHAR_ANIM_CREDITS_LOOK_UP] = MARIO_MOUTH_SMILE, 
-		[CHAR_ANIM_IDLE_HEAD_LEFT] = function (m, frame) if charSelect.character_get_current_costume(m.playerIndex) == kirbyRetroCosID then return MARIO_MOUTH_SMILE end return MARIO_MOUTH_NORMAL end, -- TODO: The smile is appearing on other kirby players, specifically using the modern design.
-		[CHAR_ANIM_IDLE_HEAD_RIGHT] = function (m, frame) if charSelect.character_get_current_costume(m.playerIndex) == kirbyRetroCosID then return MARIO_MOUTH_SMILE end return MARIO_MOUTH_NORMAL end, 
-		[CHAR_ANIM_IDLE_HEAD_CENTER] = function (m, frame) if charSelect.character_get_current_costume(m.playerIndex) == kirbyRetroCosID then return MARIO_MOUTH_SMILE end return MARIO_MOUTH_NORMAL end, 
+		--[CHAR_ANIM_IDLE_HEAD_LEFT] = function (m, frame) if charSelect.character_get_current_costume(m.playerIndex) == kirbyRetroCosID then return MARIO_MOUTH_SMILE end return MARIO_MOUTH_NORMAL end, 
+		--[CHAR_ANIM_IDLE_HEAD_RIGHT] = function (m, frame) if charSelect.character_get_current_costume(m.playerIndex) == kirbyRetroCosID then return MARIO_MOUTH_SMILE end return MARIO_MOUTH_NORMAL end, 
+		--[CHAR_ANIM_IDLE_HEAD_CENTER] = function (m, frame) if charSelect.character_get_current_costume(m.playerIndex) == kirbyRetroCosID then return MARIO_MOUTH_SMILE end return MARIO_MOUTH_NORMAL end, 
 	}, 
 	eyes = {
 		[CHAR_ANIM_FINAL_BOWSER_RAISE_HAND_SPIN] = function (m, frame) if frame > 62 and frame < 99 then return MARIO_EYES_CLOSED_INTENSE end return MARIO_EYES_BLINK end, 

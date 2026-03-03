@@ -71,7 +71,9 @@ function act_kirby_puff(m)
 	local TIMER_LIMIT = 250
 
 	gPlayerSyncTable[idx].kirbyHasPuffed_JJJ = true
-	gPlayerSyncTable[idx].kirbyPuffTimer_JJJ = gPlayerSyncTable[idx].kirbyPuffTimer_JJJ + 1
+	if not kirbyInfinitePuff then
+		gPlayerSyncTable[idx].kirbyPuffTimer_JJJ = gPlayerSyncTable[idx].kirbyPuffTimer_JJJ + 1
+	end
 	local kirbyIsTired = gPlayerSyncTable[idx].kirbyPuffTimer_JJJ > TIMER_LIMIT
 	
 	if kirbyIsTired then
