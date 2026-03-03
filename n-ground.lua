@@ -97,7 +97,7 @@ local allowedBehaviors = {
 	{id = id_bhvSnufitBalls,        canRotate = false, canEat = true,                                                     ignoreOnFuncOrCond = false,                                                                         deleteOnDetect = false}, 
 }
 
-_G.kirbyInhaleHookBehavior = function (id, canRotate, canEat, ignoreOnFuncOrCond, deleteOnDetect, onEatFunc)
+_G.kirbyInhaleHookBehavior = function (id, canRotate, canEat, ignoreOnFuncOrCond, deleteOnDetect, onEatFunc) -- Allows the modder to hook a custom behavior for Kirby to inhale.
 	if not id then return end
 	return table.insert(allowedBehaviors, {
 		id = id,                                              -- Behavior ID of the object to inhale.
@@ -107,6 +107,24 @@ _G.kirbyInhaleHookBehavior = function (id, canRotate, canEat, ignoreOnFuncOrCond
 		deleteOnDetect = deleteOnDetect or false,             -- Deletes an object if it's within Kirby's inhale range.
 		onEatFunc = onEatFunc                                 -- Special function that activates once the object's been deleted (I.E. add to Big Bully #2's condition once a bully has been eaten)
 	})
+end
+
+_G.kirbyInhaleEditBehavior = function (id, canRotate, canEat, ignoreOnFuncOrCond, deleteOnDetect, onEatFunc) -- Allows the modder to edit an existing behavior for Kirby to inhale.
+	if not id then return end
+	local returnBeh
+	for i = 1, #allowedBehaviors do
+		if allowedBehaviors[i].id == id then
+			returnBeh = allowedBehaviors[i]
+			break
+		end
+	end
+	if returnBeh then
+		returnBeh.canRotate = canRotate or returnBeh.canRotate
+		returnBeh.canEat = canEat or returnBeh.canEat
+		returnBeh.ignoreOnFuncOrCond = ignoreOnFuncOrCond or returnBeh.ignoreOnFuncOrCond
+		returnBeh.deleteOnDetect = deleteOnDetect or returnBeh.deleteOnDetect
+		returnBeh.onEatFunc = onEatFunc or returnBeh.onEatFunc
+	end
 end
 
 local function run_func_or_get_var(x, ...) if type(x) == "function" then return x(...) else return x end end
