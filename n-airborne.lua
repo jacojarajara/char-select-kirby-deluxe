@@ -1,3 +1,8 @@
+if not _G.charSelectExists then return 0 end
+local csVersion = _G.charSelect.version_get_full()
+if csVersion.major < 16 then return 0 end
+if VERSION_NUMBER < 40 then return 0 end
+
 -- CONFIG HOVER MOVE
 
 local modConfigName = "kirbyInfinitePuff_JJJ"

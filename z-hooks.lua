@@ -1,3 +1,8 @@
+if not _G.charSelectExists then return 0 end
+local csVersion = _G.charSelect.version_get_full()
+if csVersion.major < 16 then return 0 end
+if VERSION_NUMBER < 40 then return 0 end
+
 local E_MODEL_KIRBY_STAR = smlua_model_util_get_id("kirby_star_geo")
 local E_MODEL_KIRBY_AIR = smlua_model_util_get_id("kirby_air_geo")
 local E_MODEL_KIRBY_VORTEX = smlua_model_util_get_id("vortex_geo")

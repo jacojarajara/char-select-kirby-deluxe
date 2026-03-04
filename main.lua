@@ -1,8 +1,6 @@
 -- name: [CS] \\#FF79AA\\Kirby \\#FFFF3C\\Deluxe!
 -- description: Play as the pink puffball warrior with a moveset inspired by \\#FFFF3C\\Kirby and the Forgotten Land (2022)\\#DBDBDB\\, comes with both "Normal" and "Classic" costumes!\n\nKirby is owned by HAL Laboratory, Inc., voice clips from existing works (K64, SSB, SSBM) by Makiko Ohmoto.\n\n\\#ff7777\\This Pack requires Character Select\nto use as a Library!
 
-define_custom_obj_fields({oHasKirbySucked = 's32', oKirbySuckPlayer = 's32'})
-
 if not _G.charSelectExists then
     djui_popup_create("\\#ffffdc\\\n\"[CS] Kirby Deluxe!\"\nRequires the Character Select Mod\nto use as a Library!\n\nPlease turn on the Character Select Mod\nand Restart the Room!", 6)
     return 0
@@ -14,6 +12,12 @@ if csVersion.major < 16 then
 	return 0
 end
 
+if VERSION_NUMBER < 40 then
+	djui_popup_create("\\#ffffdc\\\n\"[CS] Kirby Deluxe!\"\nRequires SM64 Coop DX v1.4+!\n\nPlease update the Application\nand Host a new Room!", 6)
+	return 0
+end
+
+define_custom_obj_fields({oHasKirbySucked = 's32', oKirbySuckPlayer = 's32'})
 
 local E_MODEL_KIRBY = smlua_model_util_get_id("kirby_geo") 
 local E_MODEL_KIRBY_RETRO = smlua_model_util_get_id("kirby_retro_geo") 

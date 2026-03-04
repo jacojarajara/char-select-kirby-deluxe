@@ -1,3 +1,8 @@
+if not _G.charSelectExists then return 0 end
+local csVersion = _G.charSelect.version_get_full()
+if csVersion.major < 16 then return 0 end
+if VERSION_NUMBER < 40 then return 0 end
+
 ACT_KIRBY_INHALE = allocate_mario_action(0x080 | ACT_FLAG_ALLOW_VERTICAL_WIND_ACTION | ACT_FLAG_CONTROL_JUMP_HEIGHT | ACT_FLAG_INVULNERABLE) -- Added ACT_FLAG_INVULNERABLE to prevent a "enemy's rotation gets distorted after getting hit by enemy" bug.
 ACT_KIRBY_DODGE = allocate_mario_action(0x080 | ACT_FLAG_AIR | ACT_FLAG_ALLOW_VERTICAL_WIND_ACTION | ACT_FLAG_CONTROL_JUMP_HEIGHT)
 ACT_KIRBY_HELLO = allocate_mario_action(ACT_GROUP_AUTOMATIC | ACT_FLAG_STATIONARY)
