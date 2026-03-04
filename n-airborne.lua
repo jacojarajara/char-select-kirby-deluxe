@@ -120,7 +120,7 @@ function act_kirby_puff(m)
 					truePuffPower = 1
 				else
 					local ceilingValue = gPlayerSyncTable[idx].kirbyPuffCeiling_JJJ
-					local puffPosition = ceilingValue - m.marioObj.header.gfx.pos.y
+					local puffPosition = ceilingValue - m.pos.y
 					local puffPosMax = math.max(puffPosition, 0)
 					
 					local puffPower = puffPosMax / 800
@@ -150,6 +150,14 @@ function act_kirby_puff(m)
         drop_and_set_mario_action(m, ACT_LEDGE_GRAB, 0)
 	elseif stepCase == AIR_STEP_GRABBED_CEILING then
         set_mario_action(m, ACT_START_HANGING, 0)
+	end
+	
+	local waterCond = m.waterLevel and m.pos.y < (m.waterLevel - 30)
+	if waterCond or (m.pos.y == m.floorHeight and not kirbyIsTired) then
+		gPlayerSyncTable[idx].kirbyPuffTimer_JJJ = 0
+		if waterCond then
+			m.vel.y = 5
+		end
 	end
 	
 	return 0
