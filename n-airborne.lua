@@ -3,30 +3,21 @@ local csVersion = _G.charSelect.version_get_full()
 if csVersion.major < 16 then return 0 end
 if VERSION_NUMBER < 40 then return 0 end
 
--- CONFIG HOVER MOVE
+-- CONFIG HOVER MOVE, THANKS TO SQUISHY FOR THE HELP WITH MAKING THIS A GLOBAL CONFIG!
 
-local modConfigName = "kirbyInfinitePuff_JJJ"
-local kirbyInfinitePuff = false
-local puffCondExists = mod_storage_exists(modConfigName)
-if puffCondExists then
-	kirbyInfinitePuff = mod_storage_load_bool(modConfigName)
-else
-	kirbyInfinitePuff = false
-	mod_storage_save_bool(modConfigName, false)
-end
+gGlobalSyncTable.kirbyInfinitePuff = false
 
 local function kirbyInfinitePuffToggle(index, value)
-    kirbyInfinitePuff = value
-    mod_storage_save_bool(modConfigName, value)
+	gGlobalSyncTable.kirbyInfinitePuff = value
 end
 
-hook_mod_menu_checkbox("Infinite Hover (Recommended For ROM hacks)", kirbyInfinitePuff, kirbyInfinitePuffToggle)
-
+if network_is_server() then
+	hook_mod_menu_checkbox("Infinite Hover (Recommended For ROM hacks)", gGlobalSyncTable.kirbyInfinitePuff, kirbyInfinitePuffToggle)
+end
 -- AIRBORNE ACTS
 
 ACT_KIRBY_SLIDE = allocate_mario_action(0x0AA | ACT_FLAG_AIR | ACT_FLAG_ATTACKING | ACT_FLAG_ALLOW_VERTICAL_WIND_ACTION)
 ACT_KIRBY_PUFF = allocate_mario_action(0x080 | ACT_FLAG_AIR | ACT_FLAG_ALLOW_VERTICAL_WIND_ACTION | ACT_FLAG_CONTROL_JUMP_HEIGHT)
-ACT_KIRBY_DODGE = allocate_mario_action(0x080 | ACT_FLAG_AIR | ACT_FLAG_ALLOW_VERTICAL_WIND_ACTION | ACT_FLAG_CONTROL_JUMP_HEIGHT)
 
 function act_kirby_slide(m)
 	if m.actionState == 0 and m.actionTimer == 0 then
@@ -58,12 +49,6 @@ function act_kirby_slide(m)
 	return false
 end
 
-function lerpKirbyAngle(a, b, t)
-	local aConvert, bConvert = sm64_to_radians(a), sm64_to_radians(b)
-    local delta = (bConvert - aConvert + math.pi) % (2 * math.pi) - math.pi
-    return radians_to_sm64((aConvert + delta * t) % (2 * math.pi))
-end
-
 local function s16(num)
     num = math.floor(num) & 0xFFFF
     if num >= 32768 then return num - 65536 end
@@ -76,7 +61,7 @@ function act_kirby_puff(m)
 	local TIMER_LIMIT = 250
 
 	gPlayerSyncTable[idx].kirbyHasPuffed_JJJ = true
-	if not kirbyInfinitePuff and idx == 0 then
+	if not gGlobalSyncTable.kirbyInfinitePuff and idx == 0 then
 		gPlayerSyncTable[idx].kirbyPuffTimer_JJJ = gPlayerSyncTable[idx].kirbyPuffTimer_JJJ + 1
 	end
 	local kirbyIsTired = gPlayerSyncTable[idx].kirbyPuffTimer_JJJ > TIMER_LIMIT
@@ -116,7 +101,7 @@ function act_kirby_puff(m)
 			set_mario_animation(m, MARIO_ANIM_DOUBLE_JUMP_RISE)
 			if not kirbyIsTired then
 				local truePuffPower
-				if kirbyInfinitePuff and idx == 0 then
+				if gGlobalSyncTable.kirbyInfinitePuff and idx == 0 then
 					truePuffPower = 1
 				else
 					local ceilingValue = gPlayerSyncTable[idx].kirbyPuffCeiling_JJJ
@@ -135,7 +120,7 @@ function act_kirby_puff(m)
 	end
 	
 	if gPlayerSyncTable[idx].kirbyHasMovedStick_JJJ then
-		m.forwardVel = approach_s32(m.forwardVel, math.min(m.forwardVel, 16), 0x400, 0x25)
+		m.forwardVel = math.lerp(m.forwardVel, 0, 0.0625)
 	else
 		m.forwardVel = gPlayerSyncTable[idx].forwardVel
 		gPlayerSyncTable[idx].kirbyHasMovedStick_JJJ = m.intendedMag ~= 0

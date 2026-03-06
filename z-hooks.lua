@@ -3,9 +3,9 @@ local csVersion = _G.charSelect.version_get_full()
 if csVersion.major < 16 then return 0 end
 if VERSION_NUMBER < 40 then return 0 end
 
-local E_MODEL_KIRBY_STAR = smlua_model_util_get_id("kirby_star_geo")
-local E_MODEL_KIRBY_AIR = smlua_model_util_get_id("kirby_air_geo")
-local E_MODEL_KIRBY_VORTEX = smlua_model_util_get_id("vortex_geo")
+E_MODEL_KIRBY_STAR = smlua_model_util_get_id("kirby_star_geo")
+E_MODEL_KIRBY_AIR = smlua_model_util_get_id("kirby_air_geo")
+E_MODEL_KIRBY_VORTEX = smlua_model_util_get_id("vortex_geo")
 smlua_anim_util_register_animation('ANIM_KIRBY_STAR_LOOP', 0, 0, 0, 1, 40, { 
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -299,8 +299,9 @@ if _G.charSelect then
 		gPlayerSyncTable[i].velZ = 0
 		gPlayerSyncTable[i].kirbyPuffTimer_JJJ = 0
 		gPlayerSyncTable[i].kirbyHasPuffed_JJJ = false
-		gPlayerSyncTable[i].dodgeStickX = 0
-		gPlayerSyncTable[i].dodgeStickY = 0
+		gPlayerSyncTable[i].kirbyDodgeStick = false
+		gPlayerSyncTable[i].kirbyDodgeX = 0
+		gPlayerSyncTable[i].kirbyDodgeY = 0
 		
 		gPlayerSyncTable[i].kirbyMouthCounter_JJJ = 0 -- How many objects in Kirby's mouth?
 		gPlayerSyncTable[i].kirbyInhaleTimer_JJJ = 0
@@ -334,15 +335,6 @@ if _G.charSelect then
 		end
 	end})
 	hook_mario_action(ACT_KIRBY_HELLO, act_kirby_hello)
-	
-	local function action_value_to_string(action)
-		for k, v in pairs(_G) do
-			if v == action then
-				return k
-			end
-		end
-		return tostring(action)
-	end
 	
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_ON_WARP, function() audio_stream_stop(KIRBY_INHALE_SOUND) end) -- Added to prevent the inhale sound from playing outside a level forever.
 	
@@ -419,14 +411,17 @@ if _G.charSelect then
 				return ACT_JUMP
 			end
 		end
-		
+
 		if incomingAction == ACT_START_CRAWLING and m.action == ACT_CROUCHING then
-			m.vel.y = 32
-			if m.forwardVel < 64 then m.forwardVel = 64 end
-			gPlayerSyncTable[idx].dodgeStickX = m.controller.stickX
-			gPlayerSyncTable[idx].dodgeStickY = m.controller.stickY
-			play_character_sound(m, CHAR_SOUND_HAHA_2)
-			return ACT_KIRBY_DODGE
+			if not gPlayerSyncTable[idx].kirbyDodgeStick then
+				m.vel.y = 32
+				if m.forwardVel < 64 then m.forwardVel = 64 end
+				gPlayerSyncTable[idx].kirbyDodgeStick = true
+				play_character_sound(m, CHAR_SOUND_HAHA_2)
+				return ACT_KIRBY_DODGE
+			else
+				return 1
+			end
 		end
 		
 		if incomingAction ~= ACT_PICKING_UP and (incomingAction == ACT_DIVE or (incomingAction == ACT_PUNCHING and m.action ~= ACT_CROUCHING) or incomingAction == ACT_MOVE_PUNCHING or (incomingAction == ACT_JUMP_KICK and m.action ~= ACT_KIRBY_PUFF)) or incomingAction == ACT_WATER_PUNCH then
@@ -527,7 +522,7 @@ if _G.charSelect then
 				toScale = 750
 			elseif m.action == ACT_FORWARD_ROLLOUT then
 				toScale = 900
-			elseif (m.action == ACT_JUMP and m.vel.y > 0) or (m.action == ACT_KIRBY_PUFF and m.vel.y > 0) then
+			elseif (m.action == ACT_JUMP and m.vel.y > 0) or (m.action == ACT_KIRBY_PUFF and m.vel.y > 0) or m.action == ACT_KIRBY_DODGE then
 				toScale = 1100
 			elseif m.action == ACT_KIRBY_INHALE or (m.action == ACT_EXIT_LAND_SAVE_DIALOG and (m.marioObj.header.gfx.animInfo.animFrame > 10 and m.marioObj.header.gfx.animInfo.animFrame < 28)) then
 				toScale = 1200
@@ -535,11 +530,15 @@ if _G.charSelect then
 				toScale = 1300
 			end
 			
-			local scaleSpeed = m.pos.y == m.floorHeight and 100 or 25
+			local scaleSpeed = (m.pos.y == m.floorHeight or (m.action == ACT_KIRBY_DODGE and m.vel.y > 0)) and 100 or 25
 			gPlayerSyncTable[idx].kirbyScaleY = approach_f32(gPlayerSyncTable[idx].kirbyScaleY, toScale, scaleSpeed, scaleSpeed)
 			m.marioObj.header.gfx.scale.y = gPlayerSyncTable[idx].kirbyScaleY / 1000
 		else
 			gPlayerSyncTable[idx].kirbyScaleY = 50
+		end
+
+		if m.action == ACT_CROUCHING and (m.controller.stickX == 0 and m.controller.stickY == 0) then
+			gPlayerSyncTable[idx].kirbyDodgeStick = false
 		end
 		
 		if ((m.action == ACT_CROUCHING or m.action == ACT_CROUCH_SLIDE) or (m.action & ACT_GROUP_MASK) == ACT_GROUP_CUTSCENE) and gPlayerSyncTable[idx].kirbyMouthCounter_JJJ > 0 then -- Eat the contents

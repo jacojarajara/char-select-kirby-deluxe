@@ -32,31 +32,51 @@ function act_kirby_dodge(m)
 		m.faceAngle.y = m.intendedYaw
 		m.vel.y, m.forwardVel = 0, 0
 		gPlayerSyncTable[idx].kirbyInhaleTimer_JJJ = 0
+		if m.playerIndex == 0 then spawn_non_sync_object(id_bhvKirbyInhale_JJJ, E_MODEL_KIRBY_VORTEX, m.pos.x, m.pos.y + 25, m.pos.z, function(o) o.parentObj = m.marioObj end) end
 		return set_mario_action(m, ACT_KIRBY_INHALE, 0)
 	end
 
-	if m.actionState == 0 and m.actionTimer == 0 then
+	if m.actionTimer == 0 then
 		set_mario_animation(m, MARIO_ANIM_FORWARD_SPINNING) -- X
+	elseif m.marioObj.header.gfx.animInfo.animFrame == 0 then
+		play_sound(SOUND_ACTION_SPIN, m.marioObj.header.gfx.cameraToObject)
 	end
-	
-	if m.marioObj.header.gfx.animInfo.animFrame == 0 then
-        play_sound(SOUND_ACTION_SPIN, m.marioObj.header.gfx.cameraToObject)
-    end
 
 	m.actionTimer = m.actionTimer + 1
-	if m.actionTimer > 30 and m.pos.y - m.floorHeight > 250.0 then
-		return set_mario_action(m, ACT_FREEFALL, 0)
+	if m.actionState < 1 and m.actionTimer < 20 then
+		local intendedYaw
+		if not (m.controller.stickX == 0 and m.controller.stickY == 0) then
+			gPlayerSyncTable[idx].kirbyDodgeX = m.controller.stickX
+			gPlayerSyncTable[idx].kirbyDodgeY = m.controller.stickY
+			intendedYaw = atan2s(-m.controller.stickY, m.controller.stickX) + m.area.camera.yaw
+		else
+			intendedYaw = atan2s(-gPlayerSyncTable[idx].kirbyDodgeY, gPlayerSyncTable[idx].kirbyDodgeX) + m.area.camera.yaw
+		end
+
+		m.vel.x = approach_s32(m.vel.x, m.forwardVel * sins(intendedYaw), 0x20, 0x20)
+		m.vel.z = approach_s32(m.vel.z, m.forwardVel * coss(intendedYaw), 0x20, 0x20)
 	end
 
-	m.vel.x = approach_s32(m.vel.x, m.forwardVel * sins(m.intendedYaw), 0x05, 0x05)
-	m.vel.z = approach_s32(m.vel.z, m.forwardVel * coss(m.intendedYaw), 0x05, 0x05)
+	m.vel.x = clamp(m.vel.x, -64 / (m.actionState + 1), 64 / (m.actionState + 1))
+	m.vel.z = clamp(m.vel.z, -64 / (m.actionState + 1), 64 / (m.actionState + 1))
 
 	local stepCase = perform_air_step(m, 0)
 
 	if stepCase == AIR_STEP_LANDED then
-		m.forwardVel = 0
-		set_mario_action(m, ACT_FORWARD_ROLLOUT, 0)
 		play_mario_landing_sound(m, SOUND_ACTION_TERRAIN_LANDING)
+		if m.actionState < 1 then
+			m.vel.y = 16
+			m.actionState = 1
+			local velAbs = math.sqrt(m.vel.x^2 + m.vel.z^2)
+			if velAbs > 10 then
+				m.particleFlags = m.particleFlags | PARTICLE_SPARKLES
+			end
+		else
+			m.forwardVel = 0
+			set_mario_animation(m, MARIO_ANIM_CROUCHING)
+			set_mario_action(m, ACT_START_CROUCHING, 0)
+		end
+		
 	elseif stepCase == AIR_STEP_HIT_LAVA_WALL then
 		lava_boost_on_wall(m)
 	end
@@ -66,7 +86,6 @@ end
 
 local allowedBehaviors = {
 	{id = id_bhvBobomb,             canRotate = true,  canEat = true,                                                     ignoreOnFuncOrCond = true,                                                                         deleteOnDetect = false}, 
-	{id = id_bhvBoo,                canRotate = true,  canEat = true,                                                     ignoreOnFuncOrCond = true,                                                                         deleteOnDetect = false}, 
 	{id = id_bhvBreakableBoxSmall,  canRotate = true,  canEat = true,                                                     ignoreOnFuncOrCond = true,                                                                         deleteOnDetect = false}, 
 	{id = id_bhvEnemyLakitu,        canRotate = true,  canEat = true,                                                     ignoreOnFuncOrCond = true,                                                                         deleteOnDetect = false}, 
 	{id = id_bhvFlyGuy,             canRotate = true,  canEat = true,                                                     ignoreOnFuncOrCond = true,                                                                         deleteOnDetect = false}, 
@@ -195,7 +214,6 @@ function act_kirby_inhale(m)
 	-- SUCK
 	for i = 1, #allowedBehaviors do
 		local currentBehavior = allowedBehaviors[i]
-		--local o = obj_get_nearest_object_with_behavior_id(m.marioObj, currentBehavior.id)
 		local o = obj_get_first_with_behavior_id(currentBehavior.id)
 		while o do
 			if o and (o.oKirbySuckPlayer == 0 or idx + 1 == o.oKirbySuckPlayer) and run_func_or_get_var(currentBehavior.ignoreOnFuncOrCond, o) then
