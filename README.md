@@ -1,0 +1,41 @@
+# [CS] Kirby Deluxe!
+
+Play as the pink puffball warrior with a moveset directly inspired by "Kirby and the Forgotten Land", made to align within Kirby's N64 era!
+
+This mod features:
+* Copy abilities in the form of the base game's power-ups, with Copy Ability Essences replacing the cap models!
+* Custom objects for the Air and Star bullets!
+* Comes with both "Normal" and "Classic" costumes!
+* An API that allows modders to add objects for Kirby to inhale through LUA functions!
+
+# Inhale API
+
+To hook a custom object for Kirby to inhale, or if you want to edit an existing object, you first need to have it's behavior ID, once you've obtained it, you can proceed with adding these functions;
+
+## _G.kirbyInhaleHookBehavior
+`_G.kirbyInhaleHookBehavior` allows the modder to hook a custom behavior for Kirby to inhale.
+
+### Parameters
+
+| Field | Type | Notes |
+| ----- | ---- | ----- |
+| id | `integer (BehaviorId)` | Behavior ID of the object to inhale. |
+| canRotate | `bool`/`function` | Check to see if an object can rotate as its being inhaled. |
+| canEat | `bool`/`function` | Check to see if an object can be removed once it reaches Kirby's mouth. |
+| allowSuckFunc | `bool`/`function` | Special checks for special objects (I.E. Koopa the Quick) |
+| deleteOnDetect | `bool` | Deletes an object if it's within Kirby's inhale range. |
+| onEatFunc | `function?` | Special function that activates once the object's been deleted (I.E. add to Big Bully #2's condition once a bully has been eaten) |
+
+## _G.kirbyInhaleEditBehavior
+`_G.kirbyInhaleEditBehavior` allows the modder to edit an existing behavior for Kirby to inhale.
+
+### Parameters
+
+| Field | Type | Notes |
+| ----- | ---- | ----- |
+| id | `integer (BehaviorId)` | Behavior ID of the object to modify. |
+| canRotate | `bool?`/`function?` | Check to see if an object can rotate as its being inhaled. |
+| canEat | `bool?`/`function?` | Check to see if an object can be removed once it reaches Kirby's mouth. |
+| allowSuckFunc | `bool?`/`function?` | Special checks for special objects (I.E. Koopa the Quick) |
+| deleteOnDetect | `bool?` | Deletes an object if it's within Kirby's inhale range. |
+| onEatFunc | `function?` | Special function that activates once the object's been deleted (I.E. add to Big Bully #2's condition once a bully has been eaten) |
