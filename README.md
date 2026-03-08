@@ -11,7 +11,7 @@ This mod features:
 
 # Inhale API
 
-To hook a custom object for Kirby to inhale, or if you want to edit an existing object, you first need to have it's behavior ID, once you've obtained it, you can proceed with adding these functions;
+To hook a custom object for Kirby to inhale, or if you want to edit an existing object, you first need to have its behavior ID, once you've obtained it, you can proceed with adding these functions;
 
 ## _G.kirbyInhaleHookBehavior
 `_G.kirbyInhaleHookBehavior` allows the modder to hook a custom behavior for Kirby to inhale.
@@ -21,11 +21,11 @@ To hook a custom object for Kirby to inhale, or if you want to edit an existing 
 | Field | Type | Notes |
 | ----- | ---- | ----- |
 | id | `integer (BehaviorId)` | Behavior ID of the object to inhale. |
-| canRotate | `bool`/`function` | Check to see if an object can rotate as its being inhaled. |
-| canEat | `bool`/`function` | Check to see if an object can be removed once it reaches Kirby's mouth. |
-| allowSuckFunc | `bool`/`function` | Special checks for special objects (I.E. Koopa the Quick) |
-| deleteOnDetect | `bool` | Deletes an object if it's within Kirby's inhale range. |
-| onEatFunc | `function?` | Special function that activates once the object's been deleted (I.E. add to Big Bully #2's condition once a bully has been eaten) |
+| canRotate | `bool`/`function` | Check to see if an object can rotate as its being inhaled, default is `true`. |
+| canEat | `bool`/`function` | Check to see if an object can be removed once it reaches Kirby's mouth, default is `true`. |
+| allowSuckFunc | `bool`/`function` | Special checks for special objects (I.E. Koopa the Quick), set `false` to stop the inhale, default is `true`. |
+| deleteOnDetect | `bool` | Deletes an object if it's within Kirby's inhale range, default is `false`, set `true` to activate. |
+| onEatFunc | `function?` | Special function that activates once the object's been deleted (I.E. add to Big Bully #2's condition once a bully has been eaten), default is `nil`. |
 
 ## _G.kirbyInhaleEditBehavior
 `_G.kirbyInhaleEditBehavior` allows the modder to edit an existing behavior for Kirby to inhale.
