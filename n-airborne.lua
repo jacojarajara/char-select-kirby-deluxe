@@ -55,16 +55,17 @@ local function s16(num)
     return num
 end
 
+PUFF_TIMER_LIMIT = 250 -- Global constant for allowed puff time.
+
 function act_kirby_puff(m)
 	local idx = m.playerIndex
 	local VELOCITY_AMPLITUDE = 20
-	local TIMER_LIMIT = 250
 
 	gPlayerSyncTable[idx].kirbyHasPuffed_JJJ = true
 	if not gGlobalSyncTable.kirbyInfinitePuff and idx == 0 then
 		gPlayerSyncTable[idx].kirbyPuffTimer_JJJ = gPlayerSyncTable[idx].kirbyPuffTimer_JJJ + 1
 	end
-	local kirbyIsTired = gPlayerSyncTable[idx].kirbyPuffTimer_JJJ > TIMER_LIMIT
+	local kirbyIsTired = gPlayerSyncTable[idx].kirbyPuffTimer_JJJ > PUFF_TIMER_LIMIT
 	
 	if kirbyIsTired then
 		if gPlayerSyncTable[idx].kirbyPuffTimer_JJJ % 13 == 0 then -- Spawns Particles.
@@ -78,8 +79,10 @@ function act_kirby_puff(m)
 		end
 	end
 	
-	if (m.input & INPUT_B_PRESSED) ~= 0 or (kirbyIsTired and (m.pos.y == m.floorHeight or gPlayerSyncTable[idx].kirbyPuffTimer_JJJ > 450)) then
-		gPlayerSyncTable[idx].kirbyPuffTimer_JJJ = 0
+	if (m.input & INPUT_B_PRESSED) ~= 0 or (kirbyIsTired and (m.pos.y < m.floorHeight + 25 or gPlayerSyncTable[idx].kirbyPuffTimer_JJJ > 450)) then
+		if not gGlobalSyncTable.kirbyInfinitePuff and idx == 0 then
+			gPlayerSyncTable[idx].kirbyPuffTimer_JJJ = gPlayerSyncTable[idx].kirbyPuffTimer_JJJ + 25
+		end
 		set_mario_action(m, ACT_JUMP_KICK, 0)
 		m.vel.y = 24
 		return
@@ -122,7 +125,7 @@ function act_kirby_puff(m)
 	if gPlayerSyncTable[idx].kirbyHasMovedStick_JJJ then
 		m.forwardVel = math.lerp(m.forwardVel, 0, 0.0625)
 	else
-		m.forwardVel = gPlayerSyncTable[idx].forwardVel
+		m.forwardVel = gPlayerSyncTable[idx].kirbyForwardVel
 		gPlayerSyncTable[idx].kirbyHasMovedStick_JJJ = m.intendedMag ~= 0
 	end
 	

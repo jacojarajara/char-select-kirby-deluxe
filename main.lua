@@ -30,9 +30,8 @@ KIRBY_OBJECT_SOUND = audio_sample_load("SOUND_OBJECT.ogg")
 KIRBY_LAND_SOUND = audio_sample_load("SOUND_LAND.ogg")
 KIRBY_STEP_SOUND = audio_sample_load("SOUND_STEP.ogg")
 KIRBY_HIT_SOUND = audio_sample_load("SOUND_HITENEMY.ogg")
-KIRBY_INHALE_SOUND = audio_stream_load("SOUND_INHALE.ogg")
-audio_stream_set_looping(KIRBY_INHALE_SOUND, true)
-audio_stream_set_loop_points(KIRBY_INHALE_SOUND, 0.543*16000, 1.123*16000)
+KIRBY_INHALE_SOUND = audio_sample_load("SOUND_INHALE.ogg")
+
 local KIRBY_VOICETABLE = {
 	[CHAR_SOUND_OKEY_DOKEY] =         'VOICE_LETSAGO2.ogg', 
 	[CHAR_SOUND_HELLO] =              {'VOICE_LETSAGO4.ogg', 'VOICE_LETSAGO.ogg', 'VOICE_LETSAGO3.ogg', 'VOICE_LETSAGO2.ogg'}, 
@@ -151,6 +150,11 @@ local KIRBY_PALETTES = {
 		[SHOES] = "715CC2", [EMBLEM] = "FFFF00"
 	},
 }
+
+function play_kirby_sound(m, pos, vol)
+	if is_game_paused() or _G.charSelect.is_menu_open() then return end
+	return audio_sample_play(m, pos, vol)
+end
 
 local KIRBY_HEALTHMETER = {
     label = {

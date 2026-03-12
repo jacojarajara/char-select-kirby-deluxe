@@ -197,7 +197,7 @@ if _G.charSelect then
 								hasAttacked = 2
 							end
 							oHit.oInteractStatus = oHit.oInteractStatus | INT_STATUS_WAS_ATTACKED | INT_STATUS_INTERACTED | INT_STATUS_TOUCHED_BOB_OMB | ATTACK_PUNCH
-							audio_sample_play(KIRBY_HIT_SOUND, o.header.gfx.pos, 0.5)
+							play_kirby_sound(KIRBY_HIT_SOUND, o.header.gfx.pos, 0.5)
 						end
 					end
 				end
@@ -205,11 +205,12 @@ if _G.charSelect then
 			end
 		end
 		
+		local pastX, pastZ = o.oPosX, o.oPosZ
 		cur_obj_update_floor_and_walls()
-		cur_obj_move_standard(-78) -- Added so that the object can move on slopes
-
-		if (o.oMoveFlags & OBJ_MOVE_HIT_WALL) ~= 0 or (o.oBehParams <= 1 and hasAttacked ~= 0) or hasAttacked > 1 then
-			audio_sample_play(KIRBY_HIT_SOUND, o.header.gfx.pos, 1)
+		cur_obj_move_standard(78) -- Added so that the object can move on slopes
+		
+		if (o.oMoveFlags & OBJ_MOVE_HIT_WALL) ~= 0 or (o.oBehParams <= 1 and hasAttacked ~= 0) or hasAttacked > 1 or ((pastX == o.oPosX) or (pastZ == o.oPosZ)) then -- Added failsafe for standstill star bullets.
+			play_kirby_sound(KIRBY_HIT_SOUND, o.header.gfx.pos, 1)
 			spawn_mist_particles()
 			spawn_triangle_break_particles(10, 139, 0.2, 3)
 			obj_mark_for_deletion(o)
@@ -293,10 +294,10 @@ if _G.charSelect then
 		gPlayerSyncTable[i].kirbyFallTimer_JJJ = 0
 		gPlayerSyncTable[i].kirbyPuffCeiling_JJJ = 0
 		gPlayerSyncTable[i].kirbyHasMovedStick_JJJ = false
-		gPlayerSyncTable[i].forwardVel = 0
-		gPlayerSyncTable[i].velX = 0
-		gPlayerSyncTable[i].velY = 0
-		gPlayerSyncTable[i].velZ = 0
+		gPlayerSyncTable[i].kirbyForwardVel = 0
+		gPlayerSyncTable[i].kirbyVelX = 0
+		gPlayerSyncTable[i].kirbyVelY = 0
+		gPlayerSyncTable[i].kirbyVelZ = 0
 		gPlayerSyncTable[i].kirbyPuffTimer_JJJ = 0
 		gPlayerSyncTable[i].kirbyHasPuffed_JJJ = false
 		gPlayerSyncTable[i].kirbyDodgeStick = false
@@ -336,14 +337,19 @@ if _G.charSelect then
 	end})
 	hook_mario_action(ACT_KIRBY_HELLO, act_kirby_hello)
 	
-	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_ON_WARP, function() audio_stream_stop(KIRBY_INHALE_SOUND) end) -- Added to prevent the inhale sound from playing outside a level forever.
+	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_ON_WARP, function() audio_sample_stop(KIRBY_INHALE_SOUND) end) -- Added to prevent the inhale sound from playing outside a level forever.
 	
 	local function kirbyBeforeActions(m, incomingAction)
 		local idx = m.playerIndex
 		local floorObjectVel = (m.floor and m.floor.object and m.floor.object.oForwardVel) or 0
 		
+		if incomingAction == ACT_AIR_HIT_WALL or incomingAction == ACT_SOFT_BONK then
+			mario_set_forward_vel(m, 0.0)
+			return 1
+		end
+		
 		if m.action == ACT_KIRBY_INHALE then
-			audio_stream_stop(KIRBY_INHALE_SOUND)
+			audio_sample_stop(KIRBY_INHALE_SOUND)
 		end
 		
 		if incomingAction == ACT_JUMP_KICK and m.action == ACT_KIRBY_PUFF then
@@ -360,7 +366,7 @@ if _G.charSelect then
 			if m.action == ACT_READING_NPC_DIALOG then
 				return ACT_IDLE
 			end
-			audio_sample_play(KIRBY_COPY_SOUND, m.pos, 1)
+			play_kirby_sound(KIRBY_COPY_SOUND, m.pos, 1)
 			m.particleFlags = m.particleFlags | PARTICLE_SPARKLES
 			for i = 1, 10 do
 				spawn_non_sync_object(id_bhvBreakBoxTriangle, E_MODEL_SPARKLES, m.pos.x, m.pos.y, m.pos.z, function (o) 
@@ -504,14 +510,14 @@ if _G.charSelect then
 	end
 	
 	local function kirbyPostUpdate(m)
-		-- SCALING
-		
 		local idx = 0
 		if m.playerIndex ~= idx then return end
 		
 		if checkFlags(m) and (m.controller.buttonPressed & L_TRIG) ~= 0 and m.action ~= ACT_KIRBY_HELLO and m.pos.y == m.floorHeight and m.forwardVel == 0 then
 			set_mario_action(m, ACT_KIRBY_HELLO, 0)
 		end
+		
+		-- SCALING
 		
 		if m.action ~= ACT_SQUISHED then
 			local toScale = 1000
@@ -537,7 +543,7 @@ if _G.charSelect then
 			gPlayerSyncTable[idx].kirbyScaleY = 50
 		end
 
-		if m.action == ACT_CROUCHING and (m.controller.stickX == 0 and m.controller.stickY == 0) then
+		if (m.action == ACT_CROUCHING or m.action == ACT_CROUCH_SLIDE) and (m.controller.stickX == 0 and m.controller.stickY == 0) then
 			gPlayerSyncTable[idx].kirbyDodgeStick = false
 		end
 		
@@ -550,6 +556,8 @@ if _G.charSelect then
 		end
 	
 		if (m.action & ACT_FLAG_INTANGIBLE) ~= 0 or (m.action & ACT_FLAG_INVULNERABLE) ~= 0 then
+			gPlayerSyncTable[idx].kirbyHasPuffed_JJJ = false -- Added just in case Kirby's puffing gets interrupted, be it by attack.
+			gPlayerSyncTable[idx].kirbyPuffTimer_JJJ = 0
 			return
 		end
 		
@@ -572,6 +580,9 @@ if _G.charSelect then
 				m.flags = (m.flags | MARIO_MARIO_SOUND_PLAYED) & ~MARIO_KICKING
 				m.actionState = 1
 			end
+			if gPlayerSyncTable[idx].kirbyHasPuffed_JJJ and gPlayerSyncTable[idx].kirbyFallTimer_JJJ >= 10 and m.pos.y < gPlayerSyncTable[idx].kirbyPuffCeiling_JJJ and gPlayerSyncTable[idx].kirbyPuffTimer_JJJ < PUFF_TIMER_LIMIT then
+				gPlayerSyncTable[idx].kirbyHasPuffed_JJJ = false
+			end
 			if (m.input & INPUT_A_PRESSED) ~= 0 and gPlayerSyncTable[idx].kirbyFallTimer_JJJ >= 2 then
 				if (m.flags & MARIO_WING_CAP) ~= 0 then
 					if m.action ~= ACT_GROUND_POUND then
@@ -587,7 +598,6 @@ if _G.charSelect then
 					end
 					play_character_sound(m, CHAR_SOUND_HOOHOO)
 					gPlayerSyncTable[idx].kirbyHasMovedStick_JJJ = false
-					gPlayerSyncTable[idx].kirbyPuffTimer_JJJ = 0 -- Added just in case Kirby's puffing gets interrupted, be it by attack.
 					set_mario_action(m, ACT_KIRBY_PUFF, 0)
 					set_mario_animation(m, MARIO_ANIM_DOUBLE_JUMP_RISE)
 					m.vel.y = 16
@@ -597,6 +607,7 @@ if _G.charSelect then
 			gPlayerSyncTable[idx].kirbyFallTimer_JJJ = 0
 			if m.pos.y == m.floorHeight or (m.action & ACT_FLAG_SWIMMING) ~= 0 then
 				gPlayerSyncTable[idx].kirbyHasPuffed_JJJ = false
+				gPlayerSyncTable[idx].kirbyPuffTimer_JJJ = 0
 			end
 		end
 	end
@@ -606,6 +617,19 @@ if _G.charSelect then
 		
 		if idx ~= 0 then return end
 		
+		if m.action == ACT_CROUCH_SLIDE and (m.input & INPUT_NONZERO_ANALOG) ~= 0 then
+			if m.prevAction == ACT_WALKING and m.actionArg == 0 then
+				m.actionArg = 1
+				gPlayerSyncTable[idx].kirbyDodgeStick = true
+			elseif not gPlayerSyncTable[idx].kirbyDodgeStick then
+				m.vel.y = 32
+				if m.forwardVel < 64 then m.forwardVel = 64 end
+				gPlayerSyncTable[idx].kirbyDodgeStick = true
+				play_character_sound(m, CHAR_SOUND_HAHA_2)
+				set_mario_action(m, ACT_KIRBY_DODGE, 0)
+			end
+		end
+		
 		if m.action == ACT_PUTTING_ON_CAP or (m.action == ACT_JUMP and m.actionArg == 1 and m.vel.y > 0 and _G.charSelect.character_get_current_number(0) == kirbyCharID) then
 			m.particleFlags = m.particleFlags | PARTICLE_SPARKLES
 		end
@@ -613,8 +637,12 @@ if _G.charSelect then
 		m.peakHeight = m.pos.y -- Disables fall damage.
 
 		if m.action ~= ACT_KIRBY_PUFF and m.action ~= ACT_KIRBY_DODGE then
-			gPlayerSyncTable[idx].forwardVel = m.forwardVel
+			gPlayerSyncTable[idx].kirbyForwardVel = m.forwardVel
 		end
+		
+		gPlayerSyncTable[idx].kirbyVelX = m.vel.x
+		gPlayerSyncTable[idx].kirbyVelY = m.vel.y
+		gPlayerSyncTable[idx].kirbyVelZ = m.vel.z
 	end
 	
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_ON_INTERACT, function(m) 
@@ -622,17 +650,28 @@ if _G.charSelect then
 		gPlayerSyncTable[idx].kirbyFallTimer_JJJ = 0
 	end)
 	
+	local function action_value_to_string(action)
+		for k, v in pairs(_G) do
+			if v == action then
+				return k
+			end
+		end
+		return tostring(action)
+	end
+	
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_ON_PLAY_SOUND, function (soundBits, pos)
 		for i = 0, MAX_PLAYERS - 1 do
 			local m = gMarioStates[i]
 			local currChar = _G.charSelect.character_get_current_number(m.playerIndex)
 			local checkPos = pos.x == m.marioObj.header.gfx.cameraToObject.x and pos.y == m.marioObj.header.gfx.cameraToObject.y and pos.z == m.marioObj.header.gfx.cameraToObject.z -- Shoutouts to "EmilyEmmi" for giving me advice on how to accomplish step sounds!
 			if currChar == kirbyCharID and checkPos then
-				if soundBits == SOUND_ACTION_TERRAIN_STEP or soundBits == SOUND_ACTION_TERRAIN_STEP + m.terrainSoundAddend or soundBits == SOUND_ACTION_TERRAIN_STEP_TIPTOE or soundBits == SOUND_ACTION_TERRAIN_STEP_TIPTOE + m.terrainSoundAddend then
-					audio_sample_play(KIRBY_STEP_SOUND, m.pos, 1)
+				if soundBits == SOUND_ACTION_BONK and m.action ~= ACT_SLIDE_KICK_SLIDE then -- Avoid sounds during bonk cancellation.
+					return NO_SOUND
+				elseif soundBits == SOUND_ACTION_TERRAIN_STEP or soundBits == SOUND_ACTION_TERRAIN_STEP + m.terrainSoundAddend or soundBits == SOUND_ACTION_TERRAIN_STEP_TIPTOE or soundBits == SOUND_ACTION_TERRAIN_STEP_TIPTOE + m.terrainSoundAddend then
+					play_kirby_sound(KIRBY_STEP_SOUND, m.pos, 1)
 					return NO_SOUND
 				elseif soundBits == SOUND_ACTION_TERRAIN_LANDING or soundBits == SOUND_ACTION_TERRAIN_LANDING + m.terrainSoundAddend or soundBits == SOUND_ACTION_TERRAIN_BODY_HIT_GROUND or soundBits == SOUND_ACTION_TERRAIN_BODY_HIT_GROUND + m.terrainSoundAddend then
-					audio_sample_play(KIRBY_LAND_SOUND, m.pos, 1)
+					play_kirby_sound(KIRBY_LAND_SOUND, m.pos, 1)
 					return NO_SOUND
 				elseif soundBits == SOUND_ACTION_TERRAIN_JUMP or soundBits == SOUND_ACTION_TERRAIN_JUMP + m.terrainSoundAddend or soundBits == SOUND_ACTION_METAL_JUMP then
 					return NO_SOUND
@@ -679,8 +718,8 @@ if _G.charSelect then
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_BEFORE_MARIO_UPDATE, kirbyPreUpdate)
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_ON_SET_MARIO_ACTION, kirbyActions)
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_BEFORE_SET_MARIO_ACTION, kirbyBeforeActions)
-	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_BEFORE_PHYS_STEP, function (m)
-		local hScale, vScale = 1.0, 1.0
+	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_BEFORE_PHYS_STEP, function (m, stepType)
+		local hScale, vScale = 1.2, 1.0 -- Make Kirby 20% faster.
 	
 		if gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ > 0 then
 			if (m.action & ACT_FLAG_SWIMMING) ~= 0 then
@@ -695,13 +734,13 @@ if _G.charSelect then
 				elseif m.action & ACT_FLAG_AIR ~= 0 and m.vel.y > 0 then
 					vScale = vScale * 0.9375
 				end
-				
 			end
 		end
 		
 		m.vel.x = m.vel.x * hScale
 		m.vel.y = m.vel.y * vScale
 		m.vel.z = m.vel.z * hScale
+
 	end)
 	
 	local function allow_interact(m, o, intType) -- Piece of code I found on "Coop Central" by "@.kristy.", originally from Sonic Rebooted which, before that, was from Pasta Castle.

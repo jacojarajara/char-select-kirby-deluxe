@@ -3,7 +3,7 @@ local csVersion = _G.charSelect.version_get_full()
 if csVersion.major < 16 then return 0 end
 if VERSION_NUMBER < 40 then return 0 end
 
-ACT_KIRBY_INHALE = allocate_mario_action(0x080 | ACT_FLAG_ALLOW_VERTICAL_WIND_ACTION | ACT_FLAG_CONTROL_JUMP_HEIGHT | ACT_FLAG_INVULNERABLE) -- Added ACT_FLAG_INVULNERABLE to prevent a "enemy's rotation gets distorted after getting hit by enemy" bug.
+ACT_KIRBY_INHALE = allocate_mario_action(0x080 | ACT_FLAG_ALLOW_VERTICAL_WIND_ACTION | ACT_FLAG_CONTROL_JUMP_HEIGHT)
 ACT_KIRBY_DODGE = allocate_mario_action(0x080 | ACT_FLAG_AIR | ACT_FLAG_ALLOW_VERTICAL_WIND_ACTION | ACT_FLAG_CONTROL_JUMP_HEIGHT)
 ACT_KIRBY_HELLO = allocate_mario_action(ACT_GROUP_AUTOMATIC | ACT_FLAG_STATIONARY)
 
@@ -37,7 +37,7 @@ function act_kirby_dodge(m)
 	end
 
 	if m.actionTimer == 0 then
-		set_mario_animation(m, MARIO_ANIM_FORWARD_SPINNING) -- X
+		set_mario_animation(m, MARIO_ANIM_FORWARD_SPINNING)
 	elseif m.marioObj.header.gfx.animInfo.animFrame == 0 then
 		play_sound(SOUND_ACTION_SPIN, m.marioObj.header.gfx.cameraToObject)
 	end
@@ -167,62 +167,30 @@ end
 
 local function run_func_or_get_var(x, ...) if type(x) == "function" then return x(...) else return x end end
 
-function act_kirby_inhale(m)
+hook_event(HOOK_MARIO_UPDATE, function (m)
 	local ENEMY_SPEED = 72.5
 	local PLAYER_ANGLE_LIMIT = 35
 	local TURN_SPEED = 0x750
 	local SUCK_SPEED = 0x800
 	local TURN_ANGLE_SPEED = 10
-	local SUCK_TIMER = 75
-	
+
 	local idx = m.playerIndex
 	
-	local startPos = {x = 0, y = 0, z = 0}
-	local startYaw = m.faceAngle.y
-	
-	mario_drop_held_object(m)
-	
-	gPlayerSyncTable[idx].kirbyInhaleTimer_JJJ = gPlayerSyncTable[idx].kirbyInhaleTimer_JJJ + 1
-	local kirbyIsTired = gPlayerSyncTable[idx].kirbyInhaleTimer_JJJ > SUCK_TIMER
-	
+	local isInhaling = m.action == ACT_KIRBY_INHALE
 	local steepFloorCond = mario_floor_is_steep(m) == 1 or should_begin_sliding(m) == 1
-	local letGoButtonCond = (m.controller.buttonDown & B_BUTTON) == 0 or kirbyIsTired
+	local letGoButtonCond = (m.controller.buttonDown & B_BUTTON) == 0
 	
-	if idx == 0 then
-		audio_stream_play(KIRBY_INHALE_SOUND, false, 1)
-	end
-	
-	if mario_check_object_grab(m) ~= 0 then
-		mario_grab_used_object(m)
-		play_character_sound(m, CHAR_SOUND_UH)
-        if m.interactObj.behavior == get_behavior_from_id(id_bhvBowser) then
-            m.marioBodyState.grabPos = GRAB_POS_BOWSER
-			set_mario_action(m, ACT_PICKING_UP_BOWSER, 0)
-        elseif (m.interactObj.oInteractionSubtype & INT_SUBTYPE_GRABS_MARIO) == 0 then
-			m.actionState = 1
-            m.marioBodyState.grabPos = GRAB_POS_LIGHT_OBJ
-			set_mario_animation(m, MARIO_ANIM_PICK_UP_LIGHT_OBJ)
-		else
-			m.actionState = 1
-			m.marioBodyState.grabPos = GRAB_POS_HEAVY_OBJ
-			set_mario_animation(m, MARIO_ANIM_GRAB_HEAVY_OBJECT)
-        end
-		
-		return 1
-	end
-	
-	-- SUCK
 	for i = 1, #allowedBehaviors do
 		local currentBehavior = allowedBehaviors[i]
 		local o = obj_get_first_with_behavior_id(currentBehavior.id)
 		while o do
-			if o and (o.oKirbySuckPlayer == 0 or idx + 1 == o.oKirbySuckPlayer) and run_func_or_get_var(currentBehavior.allowSuckFunc, o) then
+			if (o.oKirbySuckPlayer == 0 or idx + 1 == o.oKirbySuckPlayer) and run_func_or_get_var(currentBehavior.allowSuckFunc, o) then
 				local distToKirby = calc_abs_dist({x = o.oPosX, y = o.oPosY, z = o.oPosZ}, {x = m.pos.x, y = m.pos.y, z = m.pos.z})
 				
 				local angle = mario_obj_angle_to_object(m, o)
 				local angleDiff = (sm64_to_degrees(m.faceAngle.y) - sm64_to_degrees(angle) + 180 + 360) % 360 - 180
 				
-				if distToKirby < 700 and (angleDiff <= PLAYER_ANGLE_LIMIT and angleDiff >= -PLAYER_ANGLE_LIMIT) and not (steepFloorCond or letGoButtonCond) then -- Added "steepFloorCond" to avoid having enemies be stuck after Kirby gets on a slope.
+				if distToKirby < 700 and (angleDiff <= PLAYER_ANGLE_LIMIT and angleDiff >= -PLAYER_ANGLE_LIMIT) and isInhaling then -- Added "steepFloorCond" to avoid having enemies be stuck after Kirby gets on a slope.
 					if currentBehavior.deleteOnDetect then
 						obj_mark_for_deletion(o)
 						break
@@ -270,7 +238,7 @@ function act_kirby_inhale(m)
 							o.oInteractStatus = 0
 							
 							m.vel.y, m.forwardVel = 7, 0
-							audio_sample_play(KIRBY_OBJECT_SOUND, m.pos, 1)
+							play_kirby_sound(KIRBY_OBJECT_SOUND, m.pos, 1)
 							gPlayerSyncTable[idx].kirbyMouthCounter_JJJ = gPlayerSyncTable[idx].kirbyMouthCounter_JJJ + 1
 						else
 							obj_set_move_angle(o, 0, 0, 0)
@@ -292,9 +260,49 @@ function act_kirby_inhale(m)
 			o = obj_get_next_with_same_behavior_id(o)
 		end
 	end
+end)
+
+function act_kirby_inhale(m)
+	local SUCK_TIMER = 75
+	
+	local idx = m.playerIndex
+	
+	local startPos = {x = 0, y = 0, z = 0}
+	local startYaw = m.faceAngle.y
+	
+	mario_drop_held_object(m)
+	
+	if idx == 0 and gPlayerSyncTable[idx].kirbyInhaleTimer_JJJ == 0 then
+		play_kirby_sound(KIRBY_INHALE_SOUND, m.pos, 1)
+	end
+	
+	gPlayerSyncTable[idx].kirbyInhaleTimer_JJJ = gPlayerSyncTable[idx].kirbyInhaleTimer_JJJ + 1
+	local kirbyIsTired = gPlayerSyncTable[idx].kirbyInhaleTimer_JJJ > SUCK_TIMER
+	
+	local steepFloorCond = mario_floor_is_steep(m) == 1 or should_begin_sliding(m) == 1
+	local letGoButtonCond = (m.controller.buttonDown & B_BUTTON) == 0 or kirbyIsTired
+	
+	if mario_check_object_grab(m) ~= 0 then
+		mario_grab_used_object(m)
+		play_character_sound(m, CHAR_SOUND_UH)
+        if m.interactObj.behavior == get_behavior_from_id(id_bhvBowser) then
+            m.marioBodyState.grabPos = GRAB_POS_BOWSER
+			set_mario_action(m, ACT_PICKING_UP_BOWSER, 0)
+        elseif (m.interactObj.oInteractionSubtype & INT_SUBTYPE_GRABS_MARIO) == 0 then
+			m.actionState = 1
+            m.marioBodyState.grabPos = GRAB_POS_LIGHT_OBJ
+			set_mario_animation(m, MARIO_ANIM_PICK_UP_LIGHT_OBJ)
+		else
+			m.actionState = 1
+			m.marioBodyState.grabPos = GRAB_POS_HEAVY_OBJ
+			set_mario_animation(m, MARIO_ANIM_GRAB_HEAVY_OBJECT)
+        end
+		
+		return 1
+	end
 	
 	if letGoButtonCond then
-		if kirbyIsTired then audio_sample_play(KIRBY_LAND_SOUND, m.pos, 1) end
+		if kirbyIsTired then play_kirby_sound(KIRBY_LAND_SOUND, m.pos, 1) end
 		if m.pos.y == m.floorHeight then
 			return set_mario_action(m, ACT_IDLE, 0)
 		else

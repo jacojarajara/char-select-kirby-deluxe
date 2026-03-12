@@ -110,7 +110,8 @@ kirbyAnims = {
 		[CHAR_ANIM_CROUCHING] = MARIO_EYES_CLOSED_INTENSE, 
 		[CHAR_ANIM_START_CROUCHING] = MARIO_EYES_CLOSED_INTENSE, 
 		[CHAR_ANIM_SWIM_PART1] = function (m, frame) if gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ > 0 then return MARIO_EYES_CLOSED_INTENSE end return MARIO_EYES_BLINK end, 
-		[CHAR_ANIM_SWIM_PART2] = function (m, frame) if gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ > 0 then return MARIO_EYES_CLOSED_INTENSE end return MARIO_EYES_BLINK end, 
+		[CHAR_ANIM_SWIM_PART2] = function (m, frame) if gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ > 0 then return MARIO_EYES_CLOSED_INTENSE end return MARIO_EYES_BLINK end,
+		[CHAR_ANIM_SHOCKED] = MARIO_EYES_SHOCKED, 
 	}, 
 	anims = {
 		[CHAR_ANIM_SINGLE_JUMP] = "KIRBY_JUMP", 
