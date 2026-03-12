@@ -593,9 +593,6 @@ if _G.charSelect then
 						m.vel.y = 64
 					end
 				elseif not gPlayerSyncTable[idx].kirbyHasPuffed_JJJ then
-					if m.action == ACT_WATER_JUMP then -- Resets camera in case Kirby was in water.
-						set_camera_mode(m.area.camera, m.area.camera.defMode, 1)
-					end
 					play_character_sound(m, CHAR_SOUND_HOOHOO)
 					gPlayerSyncTable[idx].kirbyHasMovedStick_JJJ = false
 					set_mario_action(m, ACT_KIRBY_PUFF, 0)
@@ -649,15 +646,6 @@ if _G.charSelect then
 		local idx = m.playerIndex
 		gPlayerSyncTable[idx].kirbyFallTimer_JJJ = 0
 	end)
-	
-	local function action_value_to_string(action)
-		for k, v in pairs(_G) do
-			if v == action then
-				return k
-			end
-		end
-		return tostring(action)
-	end
 	
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_ON_PLAY_SOUND, function (soundBits, pos)
 		for i = 0, MAX_PLAYERS - 1 do
@@ -718,9 +706,12 @@ if _G.charSelect then
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_BEFORE_MARIO_UPDATE, kirbyPreUpdate)
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_ON_SET_MARIO_ACTION, kirbyActions)
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_BEFORE_SET_MARIO_ACTION, kirbyBeforeActions)
+
 	_G.charSelect.character_hook_moveset(kirbyCharID, HOOK_BEFORE_PHYS_STEP, function (m, stepType)
-		local hScale, vScale = 1.2, 1.0 -- Make Kirby 20% faster.
+		if m.action == ACT_WATER_JUMP then return end
 	
+		local hScale, vScale = 1.2, 1.0 -- Make Kirby 20% faster.
+		
 		if gPlayerSyncTable[m.playerIndex].kirbyMouthCounter_JJJ > 0 then
 			if (m.action & ACT_FLAG_SWIMMING) ~= 0 then
 				m.pos.y = m.pos.y - 5.5
